@@ -1,6 +1,6 @@
 // React — install once, then use the same names as Android.
 import { createRoot } from 'react-dom/client';
-import { cssDimen, install, sdp, ssp, scaledDp, UiModeType, DpQualifier } from 'webdimens';
+import { cssDimen, dimen, dimens, install, sdp, ssp, scaledDp, UiModeType, DpQualifier } from 'webdimens';
 import { useDimens, useDimen } from 'webdimens/react';
 
 install();
@@ -18,9 +18,20 @@ function Card({ title }: { title: string }) {
   );
 }
 
+// Units instead of px — no re-render needed, SSR-safe.
+function Banner() {
+  return (
+    <header className="p:16sdp p@landscape:12sdp_24sdp p@tv:40sdp ad-a">
+      <h1 className="fs:22ssp fs@sw600:28ssp">Declarative</h1>
+      <p style={dimens({ fontSize: '14ssp', marginTop: '8sdp' })}>dimens() style object</p>
+      <p data-dimen="font-size: 12ssp; font-size@tv: 20ssp">data-dimen</p>
+    </header>
+  );
+}
+
 function Avatar({ size }: { size: number }) {
-  const px = useDimen(() => sdp(size), [size]);
+  const px = useDimen(() => dimen(`${size}sdp`), [size]);
   return <img width={px} height={px} alt="" src="/avatar.png" />;
 }
 
-createRoot(document.getElementById('root')!).render(<><Card title="Hello" /><Avatar size={48} /></>);
+createRoot(document.getElementById('root')!).render(<><Banner /><Card title="Hello" /><Avatar size={48} /></>);

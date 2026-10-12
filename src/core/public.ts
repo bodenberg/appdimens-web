@@ -10,9 +10,29 @@ export {
   type DpQualifierEntry,
 } from './enums';
 export { DimenMetrics, type DimenMetricsInit } from './metrics';
+export { install, uninstall, type InstallOptions } from './install';
+export { flushDeclarative } from './dom';
 export {
-  install,
-  uninstall,
+  dimen,
+  dimenCss,
+  dimens,
+  dimensPx,
+  parseToken,
+  parseDimenLiteral,
+  compileCssText,
+  STRATEGY_PREFIXES,
+  type ParsedToken,
+} from './tokens';
+export {
+  compileDimenClass,
+  compileDimenAttribute,
+  dimenClassesToCss,
+  modifierCss,
+  PROPERTY_ALIASES,
+  MODE_CONDITIONS,
+  type DimenRule,
+} from './declarative';
+export {
   configure,
   refresh,
   flush,

@@ -29,7 +29,7 @@ const collect = (v) => {
   else if (v && typeof v === 'object') Object.values(v).forEach(collect);
 };
 collect(pkg.exports);
-for (const t of targets) if (!existsSync(join(root, t))) fail(`missing export target ${t}`);
+for (const t of targets) if (!t.includes('*') && !existsSync(join(root, t))) fail(`missing export target ${t}`);
 ok(`${targets.length} export targets checked`);
 
 // 2. ESM + CJS
@@ -70,7 +70,18 @@ for (const file of ['dist/webdimens.global.js', 'dist/webdimens.lite.global.js']
   const style = { textContent: '' };
   const document = {
     currentScript: null,
-    documentElement: { appendChild() {} },
+    documentElement: {
+      tagName: 'HTML',
+      classList: [],
+      attrs: {},
+      appendChild() {},
+      getAttribute(n) { return this.attrs[n] ?? null; },
+      setAttribute(n, v) { this.attrs[n] = String(v); },
+      removeAttribute(n) { delete this.attrs[n]; },
+      toggleAttribute(n, on) { if (on) this.attrs[n] = ''; else delete this.attrs[n]; },
+      hasAttribute(n) { return n in this.attrs; },
+      querySelectorAll: () => [],
+    },
     head: { appendChild() {} },
     getElementById: () => null,
     createElement: () => ({ style: {}, remove() {} }),
@@ -81,6 +92,7 @@ for (const file of ['dist/webdimens.global.js', 'dist/webdimens.lite.global.js']
     document,
     navigator: { userAgent: 'node' },
     getComputedStyle: () => ({ fontSize: '16px' }),
+    Element: class {},
     setTimeout,
     clearTimeout,
     console,
@@ -93,6 +105,8 @@ for (const file of ['dist/webdimens.global.js', 'dist/webdimens.lite.global.js']
     continue;
   }
   if (Math.abs(api.sdp(16) - 38.4) > 1e-9) fail(`${file}: sdp(16) != 38.4 on a 720 dp window`);
+  if (document.documentElement.getAttribute('data-ad-mode') !== 'normal') fail(`${file}: declarative runtime did not mark <html data-ad-mode>`);
+  if (typeof api.dimen !== 'function' || Math.abs(api.dimen('16sdp') - 38.4) > 1e-9) fail(`${file}: dimen('16sdp') != 38.4`);
   if (file.includes('.lite.') === false && typeof api.pwsdp !== 'function') fail(`${file}: missing power API`);
   void style;
   ok(`${file} defines window.WebDimens (${Object.keys(api).length} members)`);

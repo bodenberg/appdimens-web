@@ -18,10 +18,11 @@ import {
   type Signal,
 } from '@angular/core';
 import type { DimenMetrics } from './core/metrics';
-import { getMetrics, install, subscribe, type WebDimensConfig } from './core/runtime';
+import { install, type InstallOptions } from './core/install';
+import { getMetrics, subscribe } from './core/runtime';
 
 /** Installs the runtime (CSS variables) when the environment injector starts. */
-export function provideWebDimens(config?: WebDimensConfig): EnvironmentProviders {
+export function provideWebDimens(config?: InstallOptions): EnvironmentProviders {
   return makeEnvironmentProviders([
     {
       provide: ENVIRONMENT_INITIALIZER,

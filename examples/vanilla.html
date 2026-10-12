@@ -41,6 +41,14 @@
     <section class="card">
       <div class="fit" id="fit">Auto-resized headline that always fits its box</div>
     </section>
+    <!-- Declarative units: classes and data-dimen, compiled once by the runtime -->
+    <section class="card ad-a" id="decl">
+      <h2 class="fs:20ssp fs@landscape:24ssp fs@tv:40ssp mb:8sdp" id="decl-title">Declarative</h2>
+      <p class="body p:8sdp_12sdp r:8sdp" id="decl-chip" data-dimen="background: #eef; padding@sw600: 16sdp 24sdp">class="p:8sdp_12sdp" + data-dimen</p>
+    </section>
+    <style data-webdimens>
+      #decl { margin-top: 4sdp; }
+    </style>
     <section class="card"><pre class="body" id="metrics"></pre></section>
   </main>
   <script>

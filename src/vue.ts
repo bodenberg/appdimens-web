@@ -6,7 +6,8 @@
  */
 import { computed, getCurrentScope, onScopeDispose, readonly, shallowRef, type App, type ComputedRef, type Ref } from 'vue';
 import type { DimenMetrics } from './core/metrics';
-import { getMetrics, install, subscribe, type WebDimensConfig } from './core/runtime';
+import { install, type InstallOptions } from './core/install';
+import { getMetrics, subscribe } from './core/runtime';
 
 /**
  * Reactive snapshot of the viewport. Call it in `setup()` (or an `effectScope`): the
@@ -32,7 +33,7 @@ export function useDimen<T>(compute: () => T): ComputedRef<T> {
 
 /** Vue plugin: `app.use(WebDimens, { cssVariables: true })`. */
 export const WebDimens = {
-  install(_app: App, config?: WebDimensConfig): void {
+  install(_app: App, config?: InstallOptions): void {
     if (typeof window !== 'undefined') install(config);
   },
 };

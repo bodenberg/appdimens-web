@@ -1,7 +1,7 @@
 {
   "name": "webdimens",
   "version": "3.2.0",
-  "description": "AppDimens Dynamic for the web — responsive dp/sp scaling (sdp, hdp, wdp, ssp…) with the exact Android math, 12 scaling strategies, CSS custom properties and zero-allocation hot paths.",
+  "description": "AppDimens Dynamic for the web \u2014 responsive dp/sp scaling (sdp, hdp, wdp, ssp\u2026) with the exact Android math, 12 scaling strategies, CSS custom properties and zero-allocation hot paths.",
   "author": "Jean Bodenberg",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,7 +20,9 @@
     "react",
     "vue",
     "svelte",
-    "angular"
+    "angular",
+    "postcss-plugin",
+    "utility-classes"
   ],
   "sideEffects": [
     "*.css"
@@ -171,6 +173,16 @@
         "default": "./dist/units.cjs"
       }
     },
+    "./postcss": {
+      "import": {
+        "types": "./dist/postcss.d.ts",
+        "default": "./dist/postcss.js"
+      },
+      "require": {
+        "types": "./dist/postcss.d.cts",
+        "default": "./dist/postcss.cjs"
+      }
+    },
     "./react": {
       "import": {
         "types": "./dist/react.d.ts",
@@ -216,12 +228,15 @@
     "./scss": "./scss/_webdimens.scss",
     "./_webdimens.scss": "./scss/_webdimens.scss",
     "./global": "./dist/webdimens.global.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./css/*": "./css/*"
   },
   "files": [
     "dist",
     "css",
     "scss",
+    "skills",
+    "LLMS.txt",
     "README.md",
     "README.pt-BR.md",
     "CHANGELOG.md",
@@ -242,6 +257,7 @@
     "@types/node": "^26.6.5",
     "@types/react": "^18.3.0",
     "jsdom": "^30.1.2",
+    "postcss": "^8.5.29",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rxjs": "^7.8.1",

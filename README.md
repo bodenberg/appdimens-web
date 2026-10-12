@@ -9,7 +9,8 @@ builders, 12 scaling strategies, resize and physical units.
 > **Languages:** English · [Português (BR)](README.pt-BR.md)
 
 - **Fast.** Factors are precomputed once per viewport change; each call is one branch and one multiply (~11 ns, 80–90 M ops/s in Node).
-- **Declarative CSS.** Every token is published as a CSS custom property: `padding: calc(16 * var(--sdp))`. Layout follows the viewport with no JS re-render. SCSS functions (`padding: sdp(16)`) are included.
+- **Write units, not px.** `class="p:16sdp fs@tv:28ssp"`, `data-dimen="padding: 8sdp 16sdp"`, `padding: 16sdp` in CSS (PostCSS), `dimen('14ssp')` in JS. Conditions use Android qualifiers (`@landscape`, `@sw600`, `@tv`), and modifier classes (`ad-a`, `ad-i`, `ad-power`) set flags or the strategy for a whole subtree.
+- **Declarative CSS.** Every token is published as a CSS custom property (`var(--sdp)`), so layout follows the viewport with no JS re-render. SCSS functions are included.
 - **Works without JS too.** Fallback stylesheets give exact pure-CSS values for the linear strategies (and close approximations for the rest) before hydration or with no JS at all.
 - **Tree-shakable modules**, mirroring Android's per-strategy artifacts: `webdimens`, `webdimens/power`, `webdimens/fluid`, …
 - **Framework bindings** for React, Vue 3, Svelte and Angular (signals). A CDN `<script>` build is also available.
@@ -30,90 +31,114 @@ npm install webdimens
 <script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.lite.global.js"></script>
 ```
 
-## Quick start
-
-### 1. CSS (declarative, recommended for layout)
+## Quick start — write `16sdp` instead of `16px`
 
 ```js
 import { install } from 'webdimens';
-install(); // publishes --sdp, --hdp, --wdp, --ssp, --sem, … and keeps them updated
+install(); // viewport tracking + CSS variables + declarative classes (CDN script: automatic)
+```
+
+The same units (`16sdp`, `14ssp`, `12sspa`, `8hdpLw`, `10pwsdp` …) work everywhere:
+
+### 1. Classes — no CSS file needed
+
+```html
+<div class="p:16sdp r:12sdp fs:14ssp">…</div>                     <!-- padding 16.sdp, radius 12.sdp, font 14.ssp -->
+<div class="m:8sdp_16sdp w:120wdp h:48hdp">…</div>               <!-- "_" = space (multi-value) -->
+<h1 class="fs:20ssp fs@landscape:24ssp fs@sw600:28ssp fs@tv:40ssp">…</h1>
+<div class="p@tv@sw600:48sdp p:16sdp!">…</div>                   <!-- "!" = !important -->
+```
+
+`prop[@condition…]:value`. Conditions mirror Android qualifiers and `.screen()` rules:
+
+| Condition | Meaning | Android equivalent |
+|---|---|---|
+| `@landscape` / `@portrait` | orientation | `Orientation.LANDSCAPE` / `PORTRAIT` |
+| `@sw600` · `@w600` · `@h600` (`dp` optional) | smallest width / width / height ≥ 600 dp | `DpQualifier` + value (`values-sw600dp`) |
+| `@tv` `@car` `@watch` `@desk` `@appliance` `@vr` `@normal` | UI mode | `UiModeType` |
+| `@fold-open` `@fold-half` `@fold-closed` `@flip-open` `@flip-half` `@flip-closed` | foldable posture | `UiModeType.FOLD_*` / `FLIP_*` |
+| `@mw` | split / floating window | multi-window |
+
+Combine them (`p@tv@sw600:48sdp`). Priority is the Android `.screen()` one, whatever the class order:
+UI mode + qualifier > UI mode > qualifier (larger threshold wins) > orientation > default.
+
+Short property names: `p pt pr pb pl px py m mt mr mb ml mx my w h size minw minh maxw maxh fs lh ls gap gapx gapy r bw basis indent`.
+Any CSS property (`border-top-width:2sdp`) and custom properties (`--gap:12sdp`) work too. Classes without a unit
+token (e.g. Tailwind's `hover:bg-red-500`) are ignored.
+
+### 2. Modifier classes — flags and strategy for a whole subtree
+
+```html
+<section class="ad-a">  … every sdp/ssp inside behaves as sdpa/sspa (aspect ratio)       </section>
+<section class="ad-i">  … ignore multi-window (sdpi)                                       </section>
+<section class="ad-ia"> … both                                                           </section>
+<section class="ad-power"> … --sdp, --ssp, p:16sdp … use the power strategy (import 'webdimens/power') </section>
+```
+
+They nest and combine (`class="ad-fluid ad-a"`). Explicit tokens such as `16sdpia` or `16pwsdp` also work anywhere.
+
+### 3. `data-dimen` — several declarations in one attribute
+
+```html
+<div data-dimen="padding: 8sdp 16sdp; font-size: 14ssp; padding@landscape: 12sdp 24sdp; font-size@tv: 28ssp">
+```
+
+### 4. CSS files
+
+With the PostCSS plugin (Vite, Next, webpack… zero runtime cost):
+
+```js
+// postcss.config.js
+import webdimens from 'webdimens/postcss';
+export default { plugins: [webdimens()] };
 ```
 
 ```css
-@import 'webdimens/css'; /* optional: pure-CSS values before JS runs / without JS */
-
 .card {
-  padding: calc(16 * var(--sdp));       /* Android: 16.sdp  */
-  border-radius: calc(12 * var(--sdpa));/* 12.sdpa          */
-  height: calc(120 * var(--hdp));       /* 120.hdp          */
-  font-size: calc(14 * var(--ssp));     /* 14.ssp           */
+  padding: 8sdp 16sdp;              /* → calc(8 * var(--sdp)) calc(16 * var(--sdp)) */
+  font-size: 14ssp;
+  @dimen landscape { padding: 12sdp 24sdp; }
+  @dimen sw600 { padding: 32sdp; }
+  @dimen tv sw600 { font-size: 28ssp; }
 }
 ```
 
-With Sass:
+Without a build step, use `<style data-webdimens>` (compiled once by the runtime). With Sass: `@use 'webdimens/scss' as d; padding: d.sdp(16);`.
+Plain CSS also works directly with the custom properties: `padding: calc(16 * var(--sdp))`.
 
-```scss
-@use 'webdimens/scss' as d;
-.card { padding: d.sdp(16); font-size: d.ssp(14); margin: d.pwhdpa(8); }
+### 5. JavaScript
+
+```jsx
+import { dimen, dimenCss, dimens, dimensPx, sdp, ssp, sdpa, hdpLw, sdpRotate, scaledDp, Orientation, UiModeType, DpQualifier } from 'webdimens';
+
+dimen('16sdp');                                   // 19.2 (CSS px now)  — any token: '14sspa', '2sdpPx', '10pwsdp'
+el.style.padding = dimenCss('8sdp 16sdp');          // responsive calc() string
+<div style={dimens({ padding: '8sdp 16sdp', fontSize: '14ssp' })} />   // style object, responsive, SSR-safe
+<div style={dimensPx({ width: '120wdp' })} />                          // style object in px (re-render on change)
+
+sdp(16); ssp(14); sdpa(16); hdpLw(20);            // Android names as functions
+sdpRotate(80, 50, Orientation.LANDSCAPE);         // 80.sdpRotate(50, LANDSCAPE)
+scaledDp(16).screen(UiModeType.TELEVISION, 40).screen(DpQualifier.SMALL_WIDTH, 600, 24).sdp
 ```
 
-### 2. JavaScript (same names as Android `Number` extensions)
-
-```js
-import { sdp, hdp, ssp, sdpa, sdpPx, sdpRotate, scaledDp, Orientation, UiModeType, DpQualifier } from 'webdimens';
-
-el.style.padding = `${sdp(16)}px`;            // 16.sdp  → CSS px
-ctx.lineWidth = sdpPx(2);                      // 2.sdpPx → device px (× devicePixelRatio), for canvas
-title.style.fontSize = `${ssp(20)}px`;         // 20.ssp  → CSS px × user font scale
-
-sdpRotate(80, 50, Orientation.LANDSCAPE);     // 80.sdpRotate(50, LANDSCAPE)
-
-const gutter = scaledDp(16)                    // 16.scaledDp()
-  .screen(UiModeType.TELEVISION, 40)
-  .screen(DpQualifier.SMALL_WIDTH, 600, 24);
-gutter.sdp;                                    // resolved for the current window (memoized)
-```
-
-### 3. Frameworks
+### Frameworks
 
 ```tsx
-// React
-import { sdp, ssp, install } from 'webdimens';
+// React — classes and dimens() need no re-render; JS numbers do (useDimens()).
 import { useDimens, useDimen } from 'webdimens/react';
-install();
-function Card() {
-  useDimens();                                 // re-render when the viewport changes
-  return <div style={{ padding: sdp(16), fontSize: ssp(14) }} />;
-}
+<div className="p:16sdp fs:14ssp p@tv:40sdp" />
+<div style={dimens({ padding: '16sdp' })} />
+const size = useDimen(() => dimen('48sdp'));
 ```
 
 ```ts
-// Vue 3
-import { sdp } from 'webdimens';
-import { WebDimens, useDimen } from 'webdimens/vue';
-app.use(WebDimens);
-const pad = useDimen(() => sdp(16));           // ComputedRef<number>
+// Vue 3:  app.use(WebDimens) from 'webdimens/vue';   const pad = useDimen(() => sdp(16))
+// Svelte: import { dimen } from 'webdimens/svelte';  const pad = dimen(() => sdp(16))  → {$pad}
+// Angular 16+: providers: [provideWebDimens()];        pad = injectDimen(() => sdp(16))
 ```
 
-```svelte
-<!-- Svelte -->
-<script>
-  import { sdp } from 'webdimens';
-  import { dimen } from 'webdimens/svelte';
-  const pad = dimen(() => sdp(16));
-</script>
-<div style="padding: {$pad}px"></div>
-```
-
-```ts
-// Angular 16+
-bootstrapApplication(App, { providers: [provideWebDimens()] });
-export class Card { pad = injectDimen(() => sdp(16)); } // Signal<number>
-```
-
-> **SSR:** on the server the snapshot is the 300×533 reference (or one you pin with
-> `setMetrics`). For server-rendered markup prefer the CSS tokens
-> (`cssDimen('sdp', 16)` → `"calc(16 * var(--sdp))"`); they never cause hydration mismatches.
+> **SSR:** classes, `data-dimen`, `dimens()` and CSS tokens render identically on server and client.
+> Pre-compile class rules for the first paint with `dimenClassesToCss(['p:16sdp', …])`, or use the PostCSS plugin.
 
 ---
 
@@ -200,7 +225,7 @@ Import a strategy module to register it; its CSS tokens are published from then 
 ```ts
 import { install, configure, subscribe, getMetrics, setMetrics, refresh, flush, uninstall } from 'webdimens';
 
-install({ cssVariables: true });                            // start tracking + CSS tokens
+install({ cssVariables: true, declarative: true });         // tracking + CSS tokens + class/data-dimen compiler
 configure({ uiModeType: UiModeType.TELEVISION, fontScale: 1.2, multiWindow: false,
             measure: () => ({ width: innerWidth, height: innerHeight }), cssNonce: '…' });
 const off = subscribe((m) => console.log(m.screenWidthDp)); // at most once per frame
@@ -271,6 +296,16 @@ npm run generate   # regenerate src/generated, css/, scss/ from scripts/generate
 npm test           # vitest (parity, API, runtime, resize, units, frameworks, assets)
 npm run check      # generated-files check + typecheck + tests + build + dist verification
 node scripts/browser-check.mjs   # real Chromium smoke test (Playwright)
+```
+
+## Publishing (maintainers)
+
+npm, Yarn and pnpm share the npm registry, so one publish serves all three:
+
+```bash
+npm login
+npm publish --access public      # prepublishOnly runs `npm run check` first
+# users: npm i webdimens · yarn add webdimens · pnpm add webdimens
 ```
 
 ## License

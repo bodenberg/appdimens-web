@@ -51,6 +51,8 @@ interface Registered {
 
 const registry: Registered[] = [];
 const byDef = new Map<StrategyDef, Registered>();
+const byPrefix = new Map<string, Float64Array>();
+const registerListeners = new Set<(def: StrategyDef) => void>();
 const listeners = new Set<(m: DimenMetrics) => void>();
 let config: WebDimensConfig = {};
 let pinned: DimenMetrics | null = null;
@@ -72,12 +74,27 @@ export function register(def: StrategyDef): Float64Array {
     fillFactorTable(def, S.metrics, r.table);
     registry.push(r);
     byDef.set(def, r);
+    byPrefix.set(def.prefix, r.table);
+    registerListeners.forEach((l) => l(def));
     if (cssEnabled) {
       cssDirty = true;
       schedule();
     }
   }
   return r.table;
+}
+
+/** Factor table of the registered strategy with this name prefix (`''`, `'pw'`, …), if any. */
+export function tableForPrefix(prefix: string): Float64Array | undefined {
+  return byPrefix.get(prefix);
+}
+
+/** Calls `listener` for every strategy registered from now on. Returns an unsubscribe function. */
+export function onRegister(listener: (def: StrategyDef) => void): () => void {
+  registerListeners.add(listener);
+  return () => {
+    registerListeners.delete(listener);
+  };
 }
 
 /** Strategies registered so far (scaled is always first once the core is imported). */

@@ -74,6 +74,24 @@ const lines = await page.evaluate(() => {
 });
 for (const n of [1, 2, 3]) expectEq(`fittingTextSize maxLines=${n} renders ≤ ${n} lines (size ${lines[n].size}px)`, lines[n].lines <= n, true);
 expectEq('more lines allow a larger size', lines[1].size < lines[2].size && lines[2].size < lines[3].size, true);
+const decl = await page.evaluate(() => {
+  const cs = (id) => getComputedStyle(document.getElementById(id));
+  return {
+    title: cs('decl-title').fontSize,
+    chip: cs('decl-chip').paddingTop + ' ' + cs('decl-chip').paddingLeft,
+    styleBlock: cs('decl').marginTop,
+    sdpa: window.WebDimens.sdpa(1),
+    mode: document.documentElement.getAttribute('data-ad-mode'),
+  };
+});
+// .ad-a on the section → every --sdp/--ssp inside resolves to the aspect-ratio variant.
+expectEq('class fs:20ssp under .ad-a', parseFloat(decl.title), Math.round(20 * decl.sdpa * 1e4) / 1e4);
+const [padTop, padLeft] = decl.chip.split(' ').map(parseFloat);
+expectEq('class p:8sdp_12sdp under .ad-a (top)', padTop, 8 * decl.sdpa);
+expectEq('class p:8sdp_12sdp under .ad-a (left)', padLeft, 12 * decl.sdpa);
+// #decl also carries .ad-a, so 4sdp resolves to the aspect-ratio variant there.
+expectEq('<style data-webdimens> 4sdp (under .ad-a)', parseFloat(decl.styleBlock), 4 * decl.sdpa);
+expectEq('html[data-ad-mode]', decl.mode, 'normal');
 if (shotDir) await page.screenshot({ path: join(shotDir, 'vanilla-360.png'), fullPage: true });
 
 await page.setViewportSize({ width: 900, height: 1200 });
@@ -82,6 +100,11 @@ r = await probe();
 expectEq('900 dp: --sdp after live resize', r.sdpVar, '3px');
 expectEq('900 dp: card padding', r.padding, '48px');
 expectEq('900 dp: sdp(16)', r.sdp16, 48);
+const wide = await page.evaluate(() => {
+  const cs = getComputedStyle(document.getElementById('decl-chip'));
+  return { pad: cs.paddingTop, sdpa: window.WebDimens.sdpa(1) };
+});
+expectEq('data-dimen padding@sw600: 16sdp (≥600 dp) under .ad-a', parseFloat(wide.pad), Math.round(16 * wide.sdpa * 1e4) / 1e4);
 if (shotDir) await page.screenshot({ path: join(shotDir, 'vanilla-900.png'), fullPage: true });
 
 const cssOnly = await browser.newPage({ viewport: { width: 600, height: 800 } });

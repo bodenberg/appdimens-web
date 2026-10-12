@@ -8,7 +8,7 @@
 import * as core from './core/public';
 import * as space from './core/space';
 import { buildNamespace } from './core/namespace';
-import { install } from './core/runtime';
+import { install } from './core/install';
 import { SCALED } from './core/scaled';
 import { AUTO } from './strategies/auto';
 import { DENSITY } from './strategies/density';

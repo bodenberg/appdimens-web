@@ -9,6 +9,7 @@ const entry: Record<string, string> = {
   index: 'src/index.ts',
   resize: 'src/resize.ts',
   units: 'src/units.ts',
+  postcss: 'src/postcss.ts',
   react: 'src/react.ts',
   vue: 'src/vue.ts',
   svelte: 'src/svelte.ts',

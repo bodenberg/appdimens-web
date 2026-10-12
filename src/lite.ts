@@ -1,7 +1,7 @@
 /** Lite CDN build: runtime + scaled strategy only, on `window.WebDimens`. */
 import * as core from './core/public';
 import { buildNamespace } from './core/namespace';
-import { install } from './core/runtime';
+import { install } from './core/install';
 import { SCALED } from './core/scaled';
 
 const api: Record<string, unknown> = { ...core, ...buildNamespace(SCALED) };

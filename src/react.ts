@@ -13,7 +13,8 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DependencyList, type RefObject } from 'react';
 import { createDimenScope, type DimenScope, type DimenScopeOptions } from './core/scope';
 import type { DimenMetrics } from './core/metrics';
-import { getMetrics, getVersion, install, S, subscribe, type WebDimensConfig } from './core/runtime';
+import { install, type InstallOptions } from './core/install';
+import { getMetrics, getVersion, S, subscribe } from './core/runtime';
 
 const serverMetrics = (): DimenMetrics => S.metrics;
 const serverVersion = (): number => S.version;
@@ -39,7 +40,7 @@ export function useDimen<T>(compute: () => T, deps: DependencyList = []): T {
 }
 
 /** Starts the runtime (CSS variables) once from a component. Equivalent to calling `install()`. */
-export function useWebDimens(config?: WebDimensConfig): DimenMetrics {
+export function useWebDimens(config?: InstallOptions): DimenMetrics {
   const configured = useRef(false);
   if (!configured.current && typeof window !== 'undefined') {
     configured.current = true;
