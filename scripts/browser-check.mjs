@@ -92,6 +92,18 @@ expectEq('class p:8sdp_12sdp under .ad-a (left)', padLeft, 12 * decl.sdpa);
 // #decl also carries .ad-a, so 4sdp resolves to the aspect-ratio variant there.
 expectEq('<style data-webdimens> 4sdp (under .ad-a)', parseFloat(decl.styleBlock), 4 * decl.sdpa);
 expectEq('html[data-ad-mode]', decl.mode, 'normal');
+// Modifier classes on <html> itself must beat the runtime's :root:root token sheet.
+const htmlMod = await page.evaluate(() => {
+  const read = () => getComputedStyle(document.body).getPropertyValue('--sdp').trim();
+  const plain = read();
+  document.documentElement.classList.add('ad-a');
+  const withA = read();
+  const sdpa = getComputedStyle(document.body).getPropertyValue('--sdpa').trim();
+  document.documentElement.classList.remove('ad-a');
+  return { plain, withA, sdpa };
+});
+expectEq('<html class="ad-a"> redirects --sdp to --sdpa', htmlMod.withA, htmlMod.sdpa);
+expectEq('…and only while the class is present', htmlMod.plain !== htmlMod.withA, true);
 if (shotDir) await page.screenshot({ path: join(shotDir, 'vanilla-360.png'), fullPage: true });
 
 await page.setViewportSize({ width: 900, height: 1200 });

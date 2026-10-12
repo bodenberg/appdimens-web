@@ -73,6 +73,8 @@ export interface DimenRule {
   readonly order: number;
 }
 
+const hasOwn = (o: object, k: string): boolean => Object.prototype.hasOwnProperty.call(o, k);
+
 const QUALIFIER = /^(sw|w|h)(\d+(?:\.\d+)?)(?:dp)?$/;
 
 /** Parses `['landscape', 'sw600', 'tv']`; `null` if any condition is unknown. */
@@ -94,7 +96,7 @@ export function parseConditions(parts: readonly string[]): Conditions | null {
       c.qualifiers.push({ axis: q[1] as 'sw' | 'w' | 'h', value: parseFloat(q[2]!) });
       continue;
     }
-    if (part in MODE_CONDITIONS) {
+    if (hasOwn(MODE_CONDITIONS, part)) {
       c.mode = modeAttribute(MODE_CONDITIONS[part]!);
       continue;
     }
@@ -131,19 +133,27 @@ export function rootPrefix(c: Conditions): string {
   return s ? `:root${s} ` : '';
 }
 
-/** Minimal `CSS.escape` (also used where the DOM API is missing). */
+/** `CSS.escape` (with a spec-compliant fallback for SSR / Node where the DOM API is missing). */
 export function cssEscape(ident: string): string {
   if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(ident);
-  return ident.replace(/(^-?\d)|[^a-zA-Z0-9_-]/g, (ch, lead: string | undefined) =>
-    lead ? `\\3${lead.slice(-1)} ` : `\\${ch}`,
-  );
+  let out = '';
+  for (let i = 0; i < ident.length; i++) {
+    const ch = ident[i]!;
+    const code = ch.charCodeAt(0);
+    if (code === 0) out += '\uFFFD';
+    else if ((code >= 0x30 && code <= 0x39 && (i === 0 || (i === 1 && ident[0] === '-'))) || code < 0x20 || code === 0x7f) {
+      out += `\\${code.toString(16)} `;
+    } else if (i === 0 && ch === '-' && ident.length === 1) out += '\\-';
+    else if (code >= 0x80 || /[a-zA-Z0-9_-]/.test(ch)) out += ch;
+    else out += `\\${ch}`;
+  }
+  return out;
 }
 
 const PROPERTY = /^(?:--[a-zA-Z0-9_-]+|-?[a-z][a-z0-9-]*)$/;
 
 function properties(name: string): readonly string[] | null {
-  const alias = PROPERTY_ALIASES[name];
-  if (alias) return alias;
+  if (hasOwn(PROPERTY_ALIASES, name)) return PROPERTY_ALIASES[name]!;
   return PROPERTY.test(name) ? [name] : null;
 }
 
@@ -157,6 +167,13 @@ function rule(selector: string, c: Conditions, props: readonly string[], value: 
 /** `p@landscape:16sdp` → parts, or `null` when the class is not a dimension class. */
 const CLASS = /^(-{0,2}[a-zA-Z][a-zA-Z0-9-]*)((?:@[a-zA-Z0-9.-]+)*):(.+?)(!?)$/;
 
+/**
+ * Text that could break out of the declaration (CSS injection through class / attribute text):
+ * braces, `;`, comments, `<` (`</style>` in pre-compiled SSR CSS) and a backslash that would
+ * escape the rule's closing brace. Ordinary escapes such as `"\201C"` stay allowed.
+ */
+const UNSAFE_VALUE = /[{};<]|\/\*|\\(?:$|[\s{};])/;
+
 /** Compiles one class name. `null` when it is not a dimension class (other frameworks' classes are ignored). */
 export function compileDimenClass(className: string): DimenRule | null {
   const m = CLASS.exec(className);
@@ -164,16 +181,29 @@ export function compileDimenClass(className: string): DimenRule | null {
   const props = properties(m[1]!);
   if (!props) return null;
   const raw = m[3]!.replace(/_/g, ' ');
-  if (!hasDimenLiteral(raw)) return null;
+  if (UNSAFE_VALUE.test(raw) || !hasDimenLiteral(raw)) return null;
   const conditions = parseConditions(m[2] ? m[2].slice(1).split('@') : []);
   if (!conditions) return null;
   let value: string;
   try {
     value = dimenCss(raw);
-  } catch {
+  } catch (e) {
+    warnOnce(className, e);
     return null;
   }
   return rule(`.${cssEscape(className)}`, conditions, props, value, m[4] === '!');
+}
+
+const warnedClasses = new Set<string>();
+function warnOnce(key: string, e: unknown): void {
+  if (warnedClasses.has(key)) return;
+  warnedClasses.add(key);
+  console.warn(`webdimens: class "${key}" ignored — ${e instanceof Error ? e.message : String(e)}`);
+}
+
+/** Escapes text for a double-quoted CSS string (attribute selector). */
+function cssString(text: string): string {
+  return text.replace(/["\\]/g, '\\$&').replace(/\n/g, '\\a ').replace(/\r/g, '\\d ').replace(/\f/g, '\\c ');
 }
 
 /**
@@ -181,7 +211,7 @@ export function compileDimenClass(className: string): DimenRule | null {
  * emitted as plain CSS. Throws on malformed input so mistakes surface in development.
  */
 export function compileDimenAttribute(text: string, selector?: string): DimenRule[] {
-  const sel = selector ?? `[data-dimen="${text.replace(/["\\]/g, '\\$&')}"]`;
+  const sel = selector ?? `[data-dimen="${cssString(text)}"]`;
   const rules: DimenRule[] = [];
   for (const declaration of text.split(';')) {
     if (!declaration.trim()) continue;
@@ -191,6 +221,8 @@ export function compileDimenAttribute(text: string, selector?: string): DimenRul
     let value = declaration.slice(i + 1).trim();
     const important = /!important$|!$/.test(value);
     value = value.replace(/\s*!(important)?$/, '');
+    if (!value) throw new SyntaxError(`webdimens: empty value in data-dimen declaration "${declaration.trim()}"`);
+    if (UNSAFE_VALUE.test(value)) throw new SyntaxError(`webdimens: unsafe characters in data-dimen value "${value}"`);
     const [name, ...conds] = key.split('@');
     key = name!.trim();
     const props = properties(key);
@@ -241,7 +273,7 @@ export function modifierCss(strategies: readonly { id: string; prefix: string }[
     if (!s.prefix) continue;
     let body = '';
     for (const f of FAMILIES) for (const flag of FLAG_SUFFIXES) body += `--${f}${flag}:var(--${s.prefix}${f}${flag});`;
-    out += `.ad-${s.id}{${body}}\n`;
+    out += `.ad-${s.id},:root:root.ad-${s.id}{${body}}\n`;
   }
   let a = '';
   let i = '';
@@ -251,5 +283,6 @@ export function modifierCss(strategies: readonly { id: string; prefix: string }[
     i += `--${f}:var(--${f}i);--${f}a:var(--${f}ia);`;
     ia += `--${f}:var(--${f}ia);--${f}a:var(--${f}ia);--${f}i:var(--${f}ia);`;
   }
-  return `${out}.ad-a{${a}}\n.ad-i{${i}}\n.ad-ia{${ia}}\n`;
+  // `:root:root.ad-x` beats the runtime's `:root:root{…}` token sheet when the class is on <html>.
+  return `${out}.ad-a,:root:root.ad-a{${a}}\n.ad-i,:root:root.ad-i{${i}}\n.ad-ia,:root:root.ad-ia{${ia}}\n`;
 }

@@ -51,7 +51,19 @@ interface Helpers {
   AtRule: new (props: { name: string; params: string }) => PcssContainer;
 }
 
-export default function webdimens(options: WebDimensPostcssOptions = {}) {
+/**
+ * Public shape of the plugin. Node parameters are `any` on purpose: it keeps the object assignable
+ * to postcss's own `Plugin` type without depending on postcss's type definitions.
+ */
+export interface WebDimensPostcssPlugin {
+  postcssPlugin: 'webdimens';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Declaration(decl: any): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  AtRule: Record<string, (atRule: any, helpers: any) => void>;
+}
+
+function webdimens(options: WebDimensPostcssOptions = {}): WebDimensPostcssPlugin {
   const atName = options.atRule ?? 'dimen';
   return {
     postcssPlugin: 'webdimens',
@@ -98,3 +110,4 @@ export default function webdimens(options: WebDimensPostcssOptions = {}) {
   };
 }
 webdimens.postcss = true as const;
+export default webdimens;

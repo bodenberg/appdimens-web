@@ -44,7 +44,7 @@ Always call `install()` once in the app entry (the CDN script does it automatica
 - **Default: scaled** (`sdp`, `hdp`, `wdp`, `ssp`). Recommend it first.
 - `sdp` for spacing / radii / icons; `hdp` vertical rhythm; `wdp` width-driven columns; `ssp` text; `sem` text that must ignore the user's font setting (rare — prefer `ssp` for accessibility).
 - `a` suffix (`sdpa`) when very wide/tall windows look too large/small; `i` suffix only for split-screen policies.
-- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Import the module (`import 'webdimens/power'`) before using its tokens. Without it, `dimen('10pwsdp')` throws a clear error, but a class such as `p:10pwsdp` still compiles to an undefined `var(--pwsdp)`, so its declaration has no effect and nothing is logged.
+- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Import the module (`import 'webdimens/power'`) before using its tokens. Without it, `dimen('10pwsdp')` throws a clear error. A class such as `p:10pwsdp` still compiles to `calc(10 * var(--pwsdp))` and nothing is logged; while `--pwsdp` is undefined, that declaration is invalid at computed-value time and the property falls back to `unset`.
 - Subtree switch without renaming tokens: `class="ad-power"`, flags: `ad-a`, `ad-i`, `ad-ia`.
 
 ## Phase 3 — Conditions (Android qualifiers)
@@ -67,6 +67,8 @@ Text that must fit a box: `autoResizeText(el, { min: 12, max: 34, maxLines: 2 })
 3. `Px` suffix = **device** pixels (× devicePixelRatio) — only for canvas/WebGL. CSS px = no suffix.
 4. Don't recommend `i` variants or `@mw` unless the user asks about split-screen behaviour.
 5. Keep diffs small; run `npm test` (and `node scripts/browser-check.mjs` for layout changes) in this repo.
+6. `Px` tokens and `sp`/`em` tokens with an inverter (`16sdpPx`, `14sspLw`, `semPh`) are JS-only. Use them with `dimen()`, `dimensPx()` or the `…Px` functions, never in classes, `data-dimen`, `dimens()` or CSS.
+7. Literals are recognised as whole words (also next to `*`: `calc(8sdp*2)` works); text inside `url(...)` and quoted strings is never rewritten.
 
 ## Output style
 

@@ -51,7 +51,12 @@ function visit(el: Element): void {
     // Fast reject: dimension classes always contain ':' — skip everything else without parsing.
     if (cls.indexOf(':') < 0 || seenClasses.has(cls)) continue;
     seenClasses.add(cls);
-    const r = compileDimenClass(cls);
+    let r: DimenRule | null = null;
+    try {
+      r = compileDimenClass(cls);
+    } catch (e) {
+      console.error(e); // one bad class must never stop the rest of the scan
+    }
     if (r) {
       rules.push(r);
       dirty = true;
@@ -70,14 +75,27 @@ function visit(el: Element): void {
 }
 
 const compiledStyles = new WeakSet<Element>();
+const styleObservers = new Set<MutationObserver>();
 
-/** `<style data-webdimens>` blocks: units compiled in place, once. */
+function recompile(el: Element): void {
+  const text = el.textContent ?? '';
+  const next = compileCssText(text);
+  if (next !== text) el.textContent = next; // idempotent: the rewrite contains no literals
+}
+
+/**
+ * `<style data-webdimens>` blocks: units compiled in place, and again whenever a framework
+ * edits the block (own small observer, so the document observer never watches text nodes).
+ */
 function compileStyle(el: Element): void {
   if (compiledStyles.has(el)) return;
   compiledStyles.add(el);
-  const text = el.textContent ?? '';
-  const next = compileCssText(text);
-  if (next !== text) el.textContent = next;
+  recompile(el);
+  if (typeof MutationObserver !== 'undefined') {
+    const mo = new MutationObserver(() => recompile(el));
+    mo.observe(el, { childList: true, characterData: true, subtree: true });
+    styleObservers.add(mo);
+  }
 }
 
 function scan(root: ParentNode): void {
@@ -189,6 +207,8 @@ export function flushDeclarative(): void {
 export function stopDeclarative(): void {
   observer?.disconnect();
   observer = null;
+  styleObservers.forEach((mo) => mo.disconnect());
+  styleObservers.clear();
   offMetrics?.();
   offMetrics = null;
   offRegister?.();

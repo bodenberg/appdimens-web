@@ -58,7 +58,7 @@ O formato é `prop[@condição…]:valor`. As condições espelham os qualifiers
 As condições podem ser combinadas (`p@tv@sw600:48sdp`). A prioridade é a do `.screen()` do Android, independente da ordem das classes:
 modo + qualifier > modo > qualifier (o limite maior vence) > orientação > padrão.
 
-Nomes curtos de propriedade: `p pt pr pb pl px py m mt mr mb ml mx my w h size minw minh maxw maxh fs lh ls gap gapx gapy r bw basis indent`.
+Nomes curtos de propriedade: `p pt pr pb pl px py ps pe m mt mr mb ml mx my ms me w h size minw minh maxw maxh fs lh ls gap gapx gapy r radius bw ow basis indent`.
 Qualquer propriedade CSS (`border-top-width:2sdp`) e custom properties (`--gap:12sdp`) também funcionam. Classes sem um token de
 unidade são ignoradas; o `hover:bg-red-500` do Tailwind, por exemplo, não é afetado.
 
@@ -149,7 +149,7 @@ Em SSR, a marcação é igual no servidor e no cliente. As regras das classes e 
 seguem o Android.
 
 A única diferença é que, no Android, os nomes `Px` são irregulares (`sdpPxaPh`). Na web, `Px`
-vem sempre no final: `sdpPhaPx`.
+vem sempre no final: `sdpPhaPx`. O `Px` (pixels do dispositivo) só vale em JS: `dimen`, `dimensPx` e as funções `…Px`. Não funciona em classes, `data-dimen`, `dimens()` nem CSS.
 
 Para cada estratégia existem: os acessores (`sdp(16)`); `toDynamicScaledDp/Px/Sp/SpPx(v, qualifier, opts)`;
 os facilitadores `sdpRotate`, `sdpMode`, `sdpQualifier` e `sdpScreen` (com `h`/`w`, `sp` e

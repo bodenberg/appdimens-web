@@ -124,6 +124,18 @@ export function dimen(input: string | number): number {
   throw new TypeError(`webdimens: cannot resolve "${input}" (expected e.g. "16sdp", "14ssp", "12px")`);
 }
 
+const warned = new Set<string>();
+
+/** Warns once (browser only) when a CSS token's strategy module has not been imported. */
+function warnUnregistered(t: ParsedToken): void {
+  if (typeof window === 'undefined' || tableForPrefix(t.prefix) || warned.has(t.prefix)) return;
+  warned.add(t.prefix);
+  console.warn(
+    `webdimens: "${t.name}" uses the ${t.strategy} strategy, which is not registered — import 'webdimens/${t.strategy}' ` +
+      `(the CDN bundle includes it) or var(--${t.name}) stays undefined.`,
+  );
+}
+
 /** CSS expression for one literal: `16sdp` → `calc(16 * var(--sdp))`; non-tokens are returned unchanged. */
 export function literalToCss(literal: string): string {
   const lit = parseDimenLiteral(literal);
@@ -133,19 +145,42 @@ export function literalToCss(literal: string): string {
       `webdimens: "${lit.token.name}" has no CSS token (Px and sp/em inverter variants are JS-only); use a dp token or dimen().`,
     );
   }
+  warnUnregistered(lit.token);
   return `calc(${lit.value} * var(--${lit.token.name}))`;
 }
 
-/** Replaces every dimension literal in a CSS value: `"8sdp 16sdp"` → two `calc()` terms. */
-export function dimenCss(value: string): string {
-  return value.replace(/(^|[\s,(/])(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+)(?=$|[\s,)/])/g, (all, lead: string, lit: string) =>
-    parseDimenLiteral(lit) ? lead + literalToCss(lit) : all,
-  );
+const LITERAL = String.raw`(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+)`;
+/** Literal boundaries inside a value: start, whitespace, `,` `(` `)` `/` `*`. */
+const VALUE_LITERAL = new RegExp(String.raw`(^|[\s,(/*])${LITERAL}(?=$|[\s,)/*])`, 'g');
+/** Inside stylesheet text a literal may also follow `:` and precede `;` `!` `}`. */
+const TEXT_LITERAL = new RegExp(String.raw`(^|[\s,(/*:])${LITERAL}(?=$|[\s,)/*;!}])`, 'g');
+/** `url(...)` and quoted strings are never rewritten (file names like `16sdp.png`). */
+const OPAQUE = /(url\([^)]*\)|"[^"]*"|'[^']*')/i;
+
+function mapLiterals(text: string, pattern: RegExp, map: (literal: string) => string | null): string {
+  const parts = text.split(OPAQUE);
+  for (let i = 0; i < parts.length; i += 2) {
+    parts[i] = parts[i]!.replace(pattern, (all, lead: string, lit: string) => {
+      const out = map(lit);
+      return out === null ? all : lead + out;
+    });
+  }
+  return parts.join('');
 }
 
-/** `true` when the string contains at least one dimension literal. */
+/** Replaces every dimension literal in a CSS value: `"8sdp 16sdp"` → two `calc()` terms. Throws on JS-only tokens. */
+export function dimenCss(value: string): string {
+  return mapLiterals(value, VALUE_LITERAL, (lit) => (parseDimenLiteral(lit) ? literalToCss(lit) : null));
+}
+
+/** `true` when the string contains at least one dimension literal (never throws). */
 export function hasDimenLiteral(value: string): boolean {
-  return dimenCss(value) !== value;
+  let found = false;
+  mapLiterals(value, VALUE_LITERAL, (lit) => {
+    if (parseDimenLiteral(lit)) found = true;
+    return null;
+  });
+  return found;
 }
 
 type StyleInput = Record<string, string | number | null | undefined>;
@@ -181,9 +216,9 @@ export function dimensPx<T extends StyleInput>(style: T): { [K in keyof T]: stri
       out[key] = resolveToken(single.value, single.token);
       continue;
     }
-    out[key] = v.replace(/(^|[\s,(/])(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+)(?=$|[\s,)/])/g, (all, lead: string, lit: string) => {
+    out[key] = mapLiterals(v, VALUE_LITERAL, (lit) => {
       const p = parseDimenLiteral(lit);
-      return p ? `${lead}${Math.round(resolveToken(p.value, p.token) * 1e4) / 1e4}px` : all;
+      return p ? `${Math.round(resolveToken(p.value, p.token) * 1e4) / 1e4}px` : null;
     });
   }
   return out as { [K in keyof T]: string | number };
@@ -199,8 +234,13 @@ export function tokenQualifier(t: ParsedToken): DpQualifier {
  * (`.card{padding:8sdp 16sdp}` → `calc()` terms). Used for `<style data-webdimens>` blocks.
  */
 export function compileCssText(css: string): string {
-  return css.replace(/(^|[\s,(/:])(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+)(?=$|[\s,)/;!}])/g, (all, lead: string, lit: string) => {
+  return mapLiterals(css, TEXT_LITERAL, (lit) => {
     const p = parseDimenLiteral(lit);
-    return p && p.token.css ? lead + literalToCss(lit) : all;
+    if (!p) return null;
+    if (!p.token.css) {
+      console.warn(`webdimens: "${p.token.name}" is JS-only and was left unchanged in <style data-webdimens>.`);
+      return null;
+    }
+    return literalToCss(lit);
   });
 }

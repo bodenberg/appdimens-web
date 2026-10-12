@@ -62,7 +62,7 @@ The same units (`16sdp`, `14ssp`, `12sspa`, `8hdpLw`, `10pwsdp` …) work everyw
 Combine them (`p@tv@sw600:48sdp`). Priority is the Android `.screen()` one, whatever the class order:
 UI mode + qualifier > UI mode > qualifier (larger threshold wins) > orientation > default.
 
-Short property names: `p pt pr pb pl px py m mt mr mb ml mx my w h size minw minh maxw maxh fs lh ls gap gapx gapy r bw basis indent`.
+Short property names: `p pt pr pb pl px py ps pe m mt mr mb ml mx my ms me w h size minw minh maxw maxh fs lh ls gap gapx gapy r radius bw ow basis indent`.
 Any CSS property (`border-top-width:2sdp`) and custom properties (`--gap:12sdp`) work too. Classes without a unit
 token (e.g. Tailwind's `hover:bg-red-500`) are ignored.
 
@@ -164,7 +164,7 @@ const size = useDimen(() => dimen('48sdp'));
 | kind | `dp` layout · `sp` text × font scale · `em` text without font scale |
 | inverter | `Ph` `Lh` `Pw` `Lw` on `sdp`; `Lw` `Pw` on `hdp`; `Lh` `Ph` on `wdp` |
 | flags | `a` aspect ratio · `i` ignore multi-window · `ia` both |
-| `Px` | device pixels instead of CSS px |
+| `Px` | device pixels instead of CSS px. JS only: `dimen`, `dimensPx`, the `…Px` functions (not in classes, `data-dimen`, `dimens()` or CSS) |
 
 Examples: `sdp`, `sdpa`, `hdpLw`, `wdpPhia`, `ssp`, `semPx`, `pwsdp`, `fhspa`, `logwdpLh`.
 Each name exists as a function (`sdpa(16)`) and as a CSS token (`var(--sdpa)`). CSS tokens
@@ -222,7 +222,7 @@ Import a strategy module to register it; its CSS tokens are published from then 
 ## Runtime
 
 ```ts
-import { install, configure, subscribe, getMetrics, setMetrics, refresh, flush, uninstall } from 'webdimens';
+import { install, configure, subscribe, getMetrics, setMetrics, refresh, flush, flushDeclarative, uninstall } from 'webdimens';
 
 install({ cssVariables: true, declarative: true });         // tracking + CSS tokens + class/data-dimen compiler
 configure({ uiModeType: UiModeType.TELEVISION, fontScale: 1.2, multiWindow: false,
@@ -231,6 +231,7 @@ const off = subscribe((m) => console.log(m.screenWidthDp)); // at most once per 
 getMetrics();      // DimenMetrics snapshot (immutable; scale, AR, strategy factors, …)
 setMetrics({ screenWidthDp: 412, screenHeightDp: 915 });    // pin (SSR, tests, previews); null = live
 refresh();         // re-measure (e.g. after the user changed the default font size)
+flushDeclarative(); // compile classes and data-dimen added since the last frame (tests, before a layout read)
 ```
 
 Resize, orientation, DPR and posture events only mark the snapshot dirty. The next read
@@ -292,7 +293,7 @@ adds ≈0.3 KB gzip.
 
 ```bash
 npm run generate   # regenerate src/generated, css/, scss/ from scripts/generate.mjs
-npm test           # vitest (parity, API, runtime, resize, units, frameworks, assets)
+npm test           # vitest (parity, API, runtime, declarative, resize, units, frameworks, assets)
 npm run check      # generated-files check + typecheck + tests + build + dist verification
 node scripts/browser-check.mjs   # real Chromium smoke test (Playwright)
 ```

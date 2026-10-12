@@ -30,6 +30,9 @@ Grammar: `<prefix><axis><kind><inverter>?<flags>?<Px>?`
 CSS variables exist for every `dp` token, and for `sp`/`em` without inverter (`--sdp`, `--sdpLwa`, `--ssp`, `--pwhema`, …),
 plus `--ad-w --ad-h --ad-sw --ad-density --ad-dpi --ad-font-scale --ad-landscape --ad-multi-window`.
 
+`Px` tokens and `sp`/`em` tokens with an inverter (`16sdpPx`, `14sspLw`, `semPh`) are JS only: use them with `dimen()`,
+`dimensPx()`, `parseToken()` or the `…Px` functions. They are not valid in classes, `data-dimen`, `dimens()` or CSS.
+
 ## Declarative
 
 | Form | Syntax |
@@ -42,9 +45,13 @@ plus `--ad-w --ad-h --ad-sw --ad-density --ad-dpi --ad-font-scale --ad-landscape
 
 Conditions: `landscape` `portrait` · `sw<N>` `w<N>` `h<N>` (≥ N dp, optional `dp`) · `normal` `tv` `car` `watch` `desk` `appliance` `vr`
 `undefined` `fold-open` `fold-closed` `fold-half` `flip-open` `flip-closed` `flip-half` · `mw`.
+Aliases: `television` (= `tv`), `multi-window` (= `mw`). Condition names are case-insensitive.
 Order: mode+qualifier > mode > qualifier (larger N later) > orientation > default.
 Aliases: `p pt pr pb pl px py ps pe m mt mr mb ml mx my ms me w h size minw minh maxw maxh fs lh ls gap gapx gapy r radius bw ow basis indent`.
 `<html>` attributes kept by the runtime: `data-ad-mode`, `data-ad-orientation`, `data-ad-multi-window`.
+A literal is recognised only as a whole value word: at the start of the value or after a space, `,`, `(`, `/` or `*`, and
+followed by a space, `,`, `)`, `/` or `*` (`calc(8sdp*2)` works). Text inside `url(...)` and quoted strings is never rewritten.
+Class / `data-dimen` values containing `{`, `}`, `;`, `<`, `/*` or a dangling `\` are rejected (CSS-injection guard).
 
 Compilers (SSR / build tools): `dimenClassesToCss(classes, attributeValues?)`, `compileDimenClass`, `compileDimenAttribute`,
 `compileCssText`, `modifierCss`, `flushDeclarative()`.
