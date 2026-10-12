@@ -128,7 +128,10 @@ export function resolveBound(
   }
 }
 
-/** Largest step of `[min, max]` (CSS px) not exceeding `availablePx` — square/width/height boxes. */
+/**
+ * Largest step of `[min, max]` not exceeding `availablePx` — square/width/height boxes.
+ * Plain numbers are dp (CSS px) here, as Android box resize; the text fitters read plain numbers as sp.
+ */
 export function fittingBoxPx(
   min: ResizeBound | number,
   max: ResizeBound | number,
@@ -395,7 +398,7 @@ export function fittingTextPx(options: CanvasTextFitOptions): number {
       // Headless fallback: average glyph ≈ 0.55em.
       lines = countLines({ measureText: (t) => ({ width: t.length * px * 0.55 }) }, options.text, options.maxWidth, spacing, maxLines);
     }
-    if (lines > maxLines) return false;
+    if (!Number.isFinite(lines) || lines > maxLines) return false;
     return options.maxHeight === undefined || lines * px * lh <= options.maxHeight + 0.01;
   });
 }

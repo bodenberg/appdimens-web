@@ -260,8 +260,9 @@ expose the real DPI, so these use the CSS definition (1in = 96 px). Calibrate kn
 | `builder.sdp` (memoized per snapshot) | ~26 |
 
 The figures include the harness's indirect call (the baseline inline multiply measures ~2 ns).
-There are no allocations on the hot path. The core ESM is ≈3 KB gzip, and each strategy
-module is ≈3 KB gzip.
+There are no allocations on the hot path. A tree-shaken app import (`sdp`, `ssp`, `install`,
+runtime and CSS publishing) bundles to ≈4.4 KB min+gzip, and each additional strategy module
+adds about 1 KB gzip.
 
 ## Development
 
