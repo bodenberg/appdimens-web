@@ -291,6 +291,8 @@ adds ≈0.3 KB gzip.
 
 ## Development
 
+The published package runs on Node 18+ (and every modern browser). Developing it requires **Node 22+** (vitest 5 / jsdom 30).
+
 ```bash
 npm run generate   # regenerate src/generated, css/, scss/ from scripts/generate.mjs
 npm test           # vitest (parity, API, runtime, declarative, resize, units, frameworks, assets)

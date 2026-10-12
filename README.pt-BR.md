@@ -180,6 +180,8 @@ npm publish --access public      # o prepublishOnly roda `npm run check` antes
 
 ## Desenvolvimento
 
+O pacote publicado roda em Node 18+ (e em todo navegador moderno). Para desenvolver é preciso **Node 22+** (vitest 5 / jsdom 30).
+
 ```bash
 npm run generate && npm test && npm run check
 node scripts/browser-check.mjs   # teste real no Chromium
