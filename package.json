@@ -278,5 +278,8 @@
   "bugs": {
     "url": "https://github.com/bodenberg/appdimens-web/issues"
   },
-  "homepage": "https://github.com/bodenberg/appdimens-web#readme"
+  "homepage": "https://github.com/bodenberg/appdimens-web#readme",
+  "overrides": {
+    "esbuild": "^0.28.2"
+  }
 }

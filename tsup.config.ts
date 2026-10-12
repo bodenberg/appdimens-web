@@ -23,7 +23,7 @@ export default defineConfig([
     dts: true,
     splitting: true,
     treeshake: true,
-    sourcemap: true,
+    sourcemap: false,
     target: 'es2020',
     external: ['react', 'vue', '@angular/core'],
   },
