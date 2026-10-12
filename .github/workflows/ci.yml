@@ -6,25 +6,55 @@ on:
   pull_request:
 
 jobs:
+  # Full check (generated files, typecheck, tests, build, dist verification).
+  # The dev toolchain (vitest 5, jsdom 30, undici 8) requires Node 22+.
   check:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        node: [20, 22, 24]
+        node: [22, 24]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node }}
           cache: npm
       - run: npm ci
       - run: npm run check
+      - if: matrix.node == 22
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: |
+            dist
+            css
+            scss
+            package.json
+            scripts/verify-dist.mjs
+
+  # The published package supports Node >= 18: verify the built output on older runtimes.
+  dist-compat:
+    needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+    steps:
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+      - run: node scripts/verify-dist.mjs
 
   browser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
