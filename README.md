@@ -7,6 +7,8 @@ inverters, `Rotate` / `Mode` / `Qualifier` / `Screen` facilitators, `scaledDp().
 builders, 12 scaling strategies, resize and physical units.
 
 > **Languages:** English · [Português (BR)](README.pt-BR.md)
+>
+> **Full documentation:** [docs/](docs/README.md) — concepts, declarative units, CSS/PostCSS, JavaScript, strategies, frameworks, SSR, runtime, resize, units, recipes, API reference · **Runnable demos:** [examples/](examples/README.md)
 
 - **Fast.** Factors are precomputed once per viewport change; each call is one branch and one multiply (~11 ns, 80–90 M ops/s in Node).
 - **Write units, not px.** `class="p:16sdp fs@tv:28ssp"`, `data-dimen="padding: 8sdp 16sdp"`, `padding: 16sdp` in CSS (PostCSS), `dimen('14ssp')` in JS. Conditions use Android qualifiers (`@landscape`, `@sw600`, `@tv`), and modifier classes (`ad-a`, `ad-i`, `ad-power`) set flags or the strategy for a whole subtree.

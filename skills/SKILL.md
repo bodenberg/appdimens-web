@@ -7,7 +7,7 @@ description: Use this skill for any responsive sizing question on the web — ma
 
 **Library:** `webdimens` 3.2.0 — web port of AppDimens Dynamic 3.2.0 (Android). Same math, same names.
 **Install:** `npm i webdimens` (or `yarn add` / `pnpm add`) · CDN `https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js`.
-**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web).
+**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web) · full docs in [docs/](../docs/README.md) (recipes: docs/recipes.md, troubleshooting: docs/troubleshooting.md).
 
 ---
 

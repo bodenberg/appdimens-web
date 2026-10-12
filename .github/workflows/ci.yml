@@ -61,4 +61,6 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx -y playwright@1.56.1 install --with-deps chromium
-      - run: npm install --no-save playwright@1.56.1 && node scripts/browser-check.mjs
+      - run: npm install --no-save playwright@1.56.1
+      - run: node scripts/browser-check.mjs
+      - run: node scripts/examples-check.mjs

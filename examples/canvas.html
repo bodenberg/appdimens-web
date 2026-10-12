@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — canvas</title>
+  <script src="../dist/webdimens.global.js"></script>
+  <style>body { margin: 0; font-family: system-ui, sans-serif; } canvas { display: block; width: 100%; }</style>
+</head>
+<body>
+  <!-- Canvas works in device pixels: use the Px variants (× devicePixelRatio). -->
+  <canvas id="chart"></canvas>
+  <script>
+    const { sdp, sdpPx, sspPx, hdp, subscribe } = WebDimens;
+    const canvas = document.getElementById('chart');
+    const data = [12, 19, 7, 15, 22, 9, 17];
+    function draw() {
+      const cssHeight = hdp(220);                       // CSS px for layout
+      canvas.style.height = `${cssHeight}px`;
+      canvas.width = canvas.clientWidth * devicePixelRatio;
+      canvas.height = cssHeight * devicePixelRatio;
+      const ctx = canvas.getContext('2d');
+      const pad = sdpPx(16), gap = sdpPx(8);            // device px for drawing
+      const barW = (canvas.width - pad * 2 - gap * (data.length - 1)) / data.length;
+      const max = Math.max(...data);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = `${sspPx(12)}px system-ui`;
+      data.forEach((v, i) => {
+        const h = (canvas.height - pad * 2 - sspPx(16)) * (v / max);
+        const x = pad + i * (barW + gap);
+        ctx.fillStyle = '#4f46e5';
+        ctx.fillRect(x, canvas.height - pad - h, barW, h);
+        ctx.fillStyle = '#1d2433';
+        ctx.fillText(String(v), x, canvas.height - pad - h - sdpPx(4));
+      });
+      canvas.dataset.drawn = String(pad);
+    }
+    draw();
+    subscribe(draw);
+  </script>
+</body>
+</html>

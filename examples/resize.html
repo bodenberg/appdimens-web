@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — auto-resize</title>
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px; } /* minmax(0,1fr): boxes must be constrained */
+    .box { border: 1px dashed #4f46e5; height: 64px; overflow: hidden; line-height: 1.2; }
+    .one { white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="box one" id="t1">Single-line headline that always fits its box</div>
+    <div class="box" id="t2">A longer paragraph that may wrap onto at most two lines, getting as large as possible while it still fits.</div>
+    <div class="box" id="t3" contenteditable>Edit me — the text re-fits as you type.</div>
+  </main>
+  <script>
+    const { autoResizeText } = WebDimens;
+    window.__fits = [
+      autoResizeText(document.getElementById('t1'), { min: 10, max: 48 }),
+      autoResizeText(document.getElementById('t2'), { min: 10, max: 40, maxLines: 2 }),
+      autoResizeText(document.getElementById('t3'), { min: 10, max: 40 }),
+    ];
+  </script>
+</body>
+</html>

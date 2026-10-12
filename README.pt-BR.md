@@ -7,6 +7,8 @@ facilitadores `Rotate` / `Mode` / `Qualifier` / `Screen`, builders `scaledDp().s
 12 estratégias de escala, resize e unidades físicas.
 
 > **Idiomas:** [English](README.md) · Português (BR)
+>
+> **Documentação completa:** [docs/pt-BR/](docs/pt-BR/README.md) — conceitos, unidades declarativas, CSS/PostCSS, JavaScript, estratégias, frameworks, SSR, runtime, resize, unidades, receitas, referência da API · **Demos executáveis:** [examples/](examples/README.md)
 
 - **Rápida.** Os fatores são pré-calculados uma vez por mudança de viewport; cada chamada é um branch e uma multiplicação (~11 ns, 80–90 M ops/s no Node).
 - **Escreva unidades, não px.** Classes como `class="p:16sdp fs@tv:28ssp"`, atributos `data-dimen="padding: 8sdp 16sdp"`, `padding: 16sdp` no CSS (PostCSS) e `dimen('14ssp')` no JS. As condições seguem os qualifiers do Android (`@landscape`, `@sw600`, `@tv`), e as classes `ad-a`, `ad-i` e `ad-power` definem flags ou a estratégia para toda a subárvore.

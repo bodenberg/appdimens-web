@@ -235,6 +235,7 @@
     "dist",
     "css",
     "scss",
+    "docs",
     "skills",
     "LLMS.txt",
     "README.md",
@@ -249,8 +250,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "node scripts/bench.mjs",
-    "check": "npm run generate -- --check && npm run typecheck && npm test && npm run build && node scripts/verify-dist.mjs",
-    "prepublishOnly": "npm run check"
+    "check": "npm run generate -- --check && npm run docs && npm run typecheck && npm test && npm run build && node scripts/verify-dist.mjs",
+    "prepublishOnly": "npm run check",
+    "examples": "node scripts/examples-check.mjs",
+    "strategy-table": "node scripts/strategy-table.mjs",
+    "docs": "node scripts/docs-check.mjs"
   },
   "devDependencies": {
     "@angular/core": "^21.2.25",
