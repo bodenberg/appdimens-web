@@ -32,6 +32,7 @@ function destroyEnv(env: EnvironmentInjector): void {
 /** DestroyRef that the test controls: runs every registered teardown on destroy(). */
 class ManualDestroyRef extends DestroyRef {
   private readonly hooks = new Set<() => void>();
+  destroyed = false;
 
   onDestroy(callback: () => void): () => void {
     this.hooks.add(callback);
@@ -41,6 +42,7 @@ class ManualDestroyRef extends DestroyRef {
   }
 
   destroy(): void {
+    this.destroyed = true;
     for (const hook of [...this.hooks]) hook();
     this.hooks.clear();
   }
