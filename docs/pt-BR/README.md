@@ -43,7 +43,7 @@ Estas páginas cobrem todos os recursos, com exemplos executáveis.
 ## A biblioteca numa tela
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js"></script>
 
 <!-- 16 dp de padding que escalam com o viewport, como 16.sdp no Android -->
 <section class="p:16sdp r:12sdp ad-a">

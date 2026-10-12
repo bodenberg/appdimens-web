@@ -1,4 +1,4 @@
-# webdimens — API reference (3.2.0)
+# webdimens — API reference (3.2.1)
 
 All numbers are **CSS px** unless the name ends in `Px` (device px = CSS px × devicePixelRatio).
 
@@ -8,7 +8,7 @@ All numbers are **CSS px** unless the name ends in `Px` (device px = CSS px × d
 install(options?)      // viewport tracking + CSS variables + declarative compiler; idempotent
 uninstall()
 configure({ cssVariables, cssNonce, uiModeType, fontScale, multiWindow, measure })
-// install-only: declarative (default true)
+// install-only: declarative (default true), strategies: string[] | 'all' (pre-register strategies used only by hand-written CSS)
 subscribe(fn) → unsubscribe   getMetrics() → DimenMetrics   getVersion()   refresh()   flush()
 setMetrics(DimenMetrics | init | null)   // pin a snapshot (SSR, tests, previews)
 createDimenScope(element, { strategies?, cssVariables?, onChange? }) → { metrics, dp, sp, update, disconnect }

@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.2.1
+
+- **Fix:** bundlers that honour `sideEffects` (Vite / Rolldown, esbuild) could drop the scaled strategy registration when an app
+  only called `install()`, leaving `var(--sdp)` undefined. `install()` now registers the scaled strategy explicitly; a
+  regression test bundles the package with Rolldown.
+- Strategies register on demand: JS tokens (`dimen('16fsdp')`), dimension classes, `data-dimen` and `ad-<strategy>` classes
+  register their strategy automatically (no more "import the strategy module" error).
+- `install({ strategies: ['fluid', …] | 'all' })` pre-registers strategies used only by hand-written CSS or PostCSS output;
+  unknown ids throw `RangeError`.
+- Declarative compiler: per-`<style data-webdimens>` observers, attribute changes re-visit only the element, literal scan skips
+  `url()` and quoted strings.
+- Complete documentation in `docs/` (English and Portuguese): getting started, concepts, Android migration, declarative units,
+  CSS/PostCSS, JavaScript API, API reference, strategies, runtime, frameworks, SSR, resize, units, performance, recipes,
+  troubleshooting, contributing.
+- Runnable examples (`examples/`) checked in Chromium in CI; documentation link checker (`scripts/docs-check.mjs`).
+
 ## 3.2.0 — port of AppDimens Dynamic 3.2.0
 
 Full rewrite. The web library now mirrors [appdimens-dynamic](https://github.com/bodenberg/appdimens-dynamic) 3.2.0 (Android).

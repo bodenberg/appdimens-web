@@ -42,4 +42,4 @@ export const POWER_EXPONENT = 0.75;
 export const DENSITY_DPI_BASE = 160;
 
 /** Library version (kept in sync with package.json by `scripts/verify-dist.mjs`). */
-export const VERSION = '3.2.0';
+export const VERSION = '3.2.1';

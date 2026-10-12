@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { dimen, dimenCss, dimens, dimensPx, parseDimenLiteral, parseToken, setMetrics, STRATEGY_PREFIXES } from '../src/index';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { dimen, dimenCss, dimens, dimensPx, parseDimenLiteral, parseToken, registeredStrategies, setMetrics, STRATEGY_PREFIXES } from '../src/index';
 import '../src/power';
 
 beforeEach(() => setMetrics({ screenWidthDp: 600, screenHeightDp: 900, density: 2, fontScale: 1.5 }));
@@ -58,8 +58,10 @@ describe('dimen()', () => {
     expect(() => dimen('banana')).toThrow(TypeError);
   });
 
-  it('names the module to import when a strategy is not registered', () => {
-    expect(() => dimen('10logsdp')).toThrow(/webdimens\/logarithmic/);
+  it('registers a strategy on first use: no import needed', () => {
+    expect(registeredStrategies().some((d) => d.id === 'logarithmic')).toBe(false);
+    expect(dimen('10logsdp')).toBeCloseTo(10 * (1 + 0.4 * Math.log(2)));
+    expect(registeredStrategies().some((d) => d.id === 'logarithmic')).toBe(true);
   });
 });
 
@@ -76,13 +78,12 @@ describe('dimenCss()', () => {
     expect(() => dimenCss('2sspLw')).toThrow(/JS-only/);
   });
 
-  it('warns once when the strategy is not registered (browser)', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  it('registers the strategy of a compiled token so its CSS variable is published', () => {
+    expect(registeredStrategies().some((d) => d.id === 'fluid')).toBe(false);
     expect(dimenCss('3fsdp')).toBe('calc(3 * var(--fsdp))');
-    dimenCss('4fhdp');
-    expect(warn).toHaveBeenCalledTimes(1);
-    expect(String(warn.mock.calls[0]![0])).toContain("webdimens/fluid");
+    expect(registeredStrategies().some((d) => d.id === 'fluid')).toBe(true);
   });
+
 });
 
 describe('style objects', () => {

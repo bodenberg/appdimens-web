@@ -10,7 +10,7 @@ facilitadores `Rotate` / `Mode` / `Qualifier` / `Screen`, builders `scaledDp().s
 >
 > **Documentação completa:** [docs/pt-BR/](docs/pt-BR/README.md) — conceitos, unidades declarativas, CSS/PostCSS, JavaScript, estratégias, frameworks, SSR, runtime, resize, unidades, receitas, referência da API · **Demos executáveis:** [examples/](examples/README.md)
 
-- **Rápida.** Os fatores são pré-calculados uma vez por mudança de viewport; cada chamada é um branch e uma multiplicação (~11 ns, 80–90 M ops/s no Node).
+- **Rápida.** Os fatores são pré-calculados uma vez por mudança de viewport; cada chamada é um branch e uma multiplicação (~9 ns, ~100 M ops/s no Node).
 - **Escreva unidades, não px.** Classes como `class="p:16sdp fs@tv:28ssp"`, atributos `data-dimen="padding: 8sdp 16sdp"`, `padding: 16sdp` no CSS (PostCSS) e `dimen('14ssp')` no JS. As condições seguem os qualifiers do Android (`@landscape`, `@sw600`, `@tv`), e as classes `ad-a`, `ad-i` e `ad-power` definem flags ou a estratégia para toda a subárvore.
 - **CSS declarativo.** Todo token vira uma custom property: `padding: calc(16 * var(--sdp))`. O layout acompanha o viewport sem re-render em JS. Inclui funções SCSS (`padding: sdp(16)`).
 - **Funciona também sem JS.** As folhas de fallback dão valores exatos em CSS puro para as estratégias lineares (e aproximações próximas para as demais) antes da hidratação ou sem JS nenhum.
@@ -25,8 +25,8 @@ npm install webdimens
 ```
 
 ```html
-<!-- CDN: tudo em window.WebDimens, variáveis CSS instaladas no load (≈10 KB gzip) -->
-<script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js"></script>
+<!-- CDN: tudo em window.WebDimens, variáveis CSS instaladas no load (≈15 KB gzip) -->
+<script src="https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js"></script>
 ```
 
 ## Uso rápido — escreva `16sdp` em vez de `16px`
@@ -70,7 +70,7 @@ unidade são ignoradas; o `hover:bg-red-500` do Tailwind, por exemplo, não é a
 <section class="ad-a">  … todo sdp/ssp aqui dentro vira sdpa/sspa (aspect ratio) </section>
 <section class="ad-i">  … ignora multi-window (sdpi)                             </section>
 <section class="ad-ia"> … os dois                                                 </section>
-<section class="ad-power"> … --sdp, --ssp, p:16sdp … usam a estratégia power (import 'webdimens/power') </section>
+<section class="ad-power"> … --sdp, --ssp, p:16sdp … usam a estratégia power (registrada automaticamente) </section>
 ```
 
 Elas podem ser aninhadas e combinadas (`class="ad-fluid ad-a"`). Tokens explícitos como `16sdpia` ou `16pwsdp` também funcionam em qualquer lugar.

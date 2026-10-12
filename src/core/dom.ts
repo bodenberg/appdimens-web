@@ -15,6 +15,7 @@ import {
 import type { DimenMetrics } from './metrics';
 import { getMetrics, onRegister, registeredStrategies, subscribe } from './runtime';
 import { compileCssText } from './tokens';
+import { ensureStrategy } from './defs';
 
 const SHEET_ID = 'webdimens-declarative';
 const seenClasses = new Set<string>();
@@ -48,6 +49,12 @@ function visit(el: Element): void {
   const list = el.classList;
   for (let i = 0; i < list.length; i++) {
     const cls = list[i]!;
+    // Modifier class for a strategy (`ad-power`): register it so its redirections exist.
+    if (cls.charCodeAt(0) === 97 /* a */ && cls.startsWith('ad-') && !seenClasses.has(cls)) {
+      seenClasses.add(cls);
+      ensureStrategy(cls.slice(3));
+      continue;
+    }
     // Fast reject: dimension classes always contain ':' — skip everything else without parsing.
     if (cls.indexOf(':') < 0 || seenClasses.has(cls)) continue;
     seenClasses.add(cls);

@@ -43,7 +43,7 @@ every feature with runnable examples.
 ## The library in one screen
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js"></script>
 
 <!-- 16 dp of padding that scales with the viewport, like 16.sdp on Android -->
 <section class="p:16sdp r:12sdp ad-a">
