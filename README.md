@@ -262,7 +262,7 @@ expose the real DPI, so these use the CSS definition (1in = 96 px). Calibrate kn
 The figures include the harness's indirect call (the baseline inline multiply measures ~2 ns).
 There are no allocations on the hot path. A tree-shaken app import (`sdp`, `ssp`, `install`,
 runtime and CSS publishing) bundles to ≈4.4 KB min+gzip, and each additional strategy module
-adds about 1 KB gzip.
+adds ≈0.3 KB gzip.
 
 ## Development
 
