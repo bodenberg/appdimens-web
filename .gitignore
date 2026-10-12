@@ -38,3 +38,6 @@ pnpm-debug.log*
 .cache/
 .temp/
 
+
+# Temporary example-verification tests written while generating docs
+tests/_docs_*

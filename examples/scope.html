@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — element scope</title>
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; padding: 16px; }
+    /* Drag the corner: inside the panel, var(--sdp) follows the PANEL size, not the window. */
+    #panel { resize: both; overflow: auto; width: 300px; height: 260px; border: 2px dashed #4f46e5; }
+    .card { padding: calc(16 * var(--sdp)); font-size: calc(14 * var(--ssp)); background: #eef2ff; border-radius: calc(12 * var(--sdp)); }
+  </style>
+</head>
+<body>
+  <div id="panel"><div class="card"><strong>Scoped</strong><p id="info"></p></div></div>
+  <script>
+    const { createDimenScope } = WebDimens;
+    const info = document.getElementById('info');
+    const show = (m) => (info.textContent = `panel ${Math.round(m.screenWidthDp)}×${Math.round(m.screenHeightDp)} → 16sdp = ${(16 * m.smallestWidthDp / 300).toFixed(1)}px`);
+    // onChange also fires once during creation, so it must not reference `scope` itself.
+    const scope = createDimenScope(document.getElementById('panel'), { onChange: show });
+    window.__scope = scope;
+  </script>
+</body>
+</html>

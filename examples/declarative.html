@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — declarative units</title>
+  <link rel="stylesheet" href="../css/webdimens.css" />
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f6f7fb; color: #1d2433; }
+    .tile { background: #fff; border: 1px solid #dde2ee; }
+    .tag { display: inline-block; background: #eef2ff; color: #3730a3; font-family: ui-monospace, monospace; }
+    button { font: inherit; cursor: pointer; }
+    [data-active="true"] { background: #3730a3; color: #fff; }
+  </style>
+</head>
+<body>
+  <main class="p:16sdp p@sw600:24sdp_32sdp maxw:1100px" style="margin-inline:auto">
+    <h1 class="fs:22ssp fs@landscape:24ssp fs@sw600:28ssp fs@tv:44ssp m:0_0_12sdp">Declarative units</h1>
+    <p class="fs:14ssp m:0_0_16sdp">Resize the window or force a UI mode — every size below is a class or a <code>data-dimen</code> attribute.</p>
+
+    <!-- Force UI mode / multi-window to see @tv and @mw rules switch live -->
+    <div class="tile p:12sdp r:12sdp mb:16sdp" id="controls">
+      <span class="fs:12sem">UI mode:</span>
+      <button class="p:4sdp_10sdp r:6sdp fs:12sem" data-mode="NORMAL">normal</button>
+      <button class="p:4sdp_10sdp r:6sdp fs:12sem" data-mode="TELEVISION">tv</button>
+      <button class="p:4sdp_10sdp r:6sdp fs:12sem" data-mode="FOLD_OPEN">fold-open</button>
+      <button class="p:4sdp_10sdp r:6sdp fs:12sem" id="mw">multi-window: off</button>
+    </div>
+
+    <section class="tile p:16sdp r:12sdp mb:16sdp" id="conditions">
+      <h2 class="fs:18ssp m:0_0_8sdp">Conditions (Android priority)</h2>
+      <!-- default < @landscape < @sw600 < @tv < @tv@sw600 -->
+      <div id="prio" class="tile r:8sdp p:8sdp p@landscape:12sdp p@sw600:16sdp p@tv:24sdp p@tv@sw600:32sdp">
+        <span class="tag p:2sdp_6sdp r:4sdp fs:12sem">p:8sdp · @landscape 12 · @sw600 16 · @tv 24 · @tv@sw600 32</span>
+      </div>
+    </section>
+
+    <section class="tile p:16sdp r:12sdp mb:16sdp">
+      <h2 class="fs:18ssp m:0_0_8sdp">Modifiers</h2>
+      <div class="gap:8sdp" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        <div class="tile p:12sdp r:8sdp" id="plain"><span class="fs:12sem">plain</span><div class="h:8sdp w:100sdp" style="background:#6366f1"></div></div>
+        <div class="tile p:12sdp r:8sdp ad-a" id="mod-a"><span class="fs:12sem">.ad-a</span><div class="h:8sdp w:100sdp" style="background:#6366f1"></div></div>
+        <div class="tile p:12sdp r:8sdp ad-power" id="mod-power"><span class="fs:12sem">.ad-power</span><div class="h:8sdp w:100sdp" style="background:#6366f1"></div></div>
+        <div class="tile p:12sdp r:8sdp ad-fluid" id="mod-fluid"><span class="fs:12sem">.ad-fluid</span><div class="h:8sdp w:100sdp" style="background:#6366f1"></div></div>
+      </div>
+    </section>
+
+    <section class="tile r:12sdp mb:16sdp" data-dimen="padding: 16sdp; padding@landscape: 12sdp 24sdp">
+      <h2 class="fs:18ssp m:0_0_8sdp">data-dimen</h2>
+      <p data-dimen="font-size: 14ssp; font-size@tv: 24ssp; margin: 0">padding: 16sdp; padding@landscape: 12sdp 24sdp</p>
+    </section>
+
+    <style data-webdimens>
+      #readout { font-size: 12sem; padding: 12sdp; border-radius: 12sdp; }
+    </style>
+    <pre class="tile" id="readout" style="white-space:pre-wrap;margin:0"></pre>
+  </main>
+
+  <script>
+    const { configure, subscribe, getMetrics, dimen, flush } = WebDimens;
+    let multi = false;
+    document.querySelectorAll('[data-mode]').forEach((b) =>
+      b.addEventListener('click', () => { configure({ uiModeType: b.dataset.mode }); flush(); }));
+    document.getElementById('mw').addEventListener('click', (e) => {
+      multi = !multi;
+      e.currentTarget.textContent = `multi-window: ${multi ? 'on' : 'off'}`;
+      configure({ multiWindow: multi }); flush();
+    });
+    function render(m) {
+      document.querySelectorAll('[data-mode]').forEach((b) => (b.dataset.active = String(b.dataset.mode === m.uiModeType)));
+      const pad = getComputedStyle(document.getElementById('prio')).paddingTop;
+      const bar = (id) => getComputedStyle(document.querySelector(`#${id} > div`)).width;
+      document.getElementById('readout').textContent = [
+        `window ${m.screenWidthDp}×${m.screenHeightDp} · sw ${m.smallestWidthDp} · ${m.orientation} · ${m.uiModeType} · multi-window ${m.isInMultiWindowMode}`,
+        `priority box padding = ${pad}   (dimen('8sdp') = ${dimen('8sdp').toFixed(2)}px)`,
+        `100sdp bars → plain ${bar('plain')} · ad-a ${bar('mod-a')} · ad-power ${bar('mod-power')} · ad-fluid ${bar('mod-fluid')}`,
+      ].join('\n');
+    }
+    // Render after the declarative sheet is applied for this frame.
+    subscribe((m) => requestAnimationFrame(() => render(m)));
+    requestAnimationFrame(() => render(getMetrics()));
+  </script>
+</body>
+</html>

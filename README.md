@@ -7,8 +7,10 @@ inverters, `Rotate` / `Mode` / `Qualifier` / `Screen` facilitators, `scaledDp().
 builders, 12 scaling strategies, resize and physical units.
 
 > **Languages:** English · [Português (BR)](README.pt-BR.md)
+>
+> **Full documentation:** [docs/](docs/README.md) — concepts, declarative units, CSS/PostCSS, JavaScript, strategies, frameworks, SSR, runtime, resize, units, recipes, API reference · **Runnable demos:** [examples/](examples/README.md)
 
-- **Fast.** Factors are precomputed once per viewport change; each call is one branch and one multiply (~11 ns, 80–90 M ops/s in Node).
+- **Fast.** Factors are precomputed once per viewport change; each call is one branch and one multiply (~9 ns, ~100 M ops/s in Node).
 - **Write units, not px.** `class="p:16sdp fs@tv:28ssp"`, `data-dimen="padding: 8sdp 16sdp"`, `padding: 16sdp` in CSS (PostCSS), `dimen('14ssp')` in JS. Conditions use Android qualifiers (`@landscape`, `@sw600`, `@tv`), and modifier classes (`ad-a`, `ad-i`, `ad-power`) set flags or the strategy for a whole subtree.
 - **Declarative CSS.** Every token is published as a CSS custom property (`var(--sdp)`), so layout follows the viewport with no JS re-render. SCSS functions are included.
 - **Works without JS too.** Fallback stylesheets give exact pure-CSS values for the linear strategies (and close approximations for the rest) before hydration or with no JS at all.
@@ -25,10 +27,10 @@ npm install webdimens
 ```
 
 ```html
-<!-- CDN: everything on window.WebDimens, CSS variables installed on load (≈10 KB gzip) -->
-<script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js"></script>
-<!-- or scaled only (≈7 KB gzip) -->
-<script src="https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.lite.global.js"></script>
+<!-- CDN: everything on window.WebDimens, CSS variables installed on load (≈15 KB gzip) -->
+<script src="https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js"></script>
+<!-- or scaled only (≈12 KB gzip) -->
+<script src="https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.lite.global.js"></script>
 ```
 
 ## Quick start — write `16sdp` instead of `16px`
@@ -72,7 +74,7 @@ token (e.g. Tailwind's `hover:bg-red-500`) are ignored.
 <section class="ad-a">  … every sdp/ssp inside behaves as sdpa/sspa (aspect ratio)       </section>
 <section class="ad-i">  … ignore multi-window (sdpi)                                       </section>
 <section class="ad-ia"> … both                                                           </section>
-<section class="ad-power"> … --sdp, --ssp, p:16sdp … use the power strategy (import 'webdimens/power') </section>
+<section class="ad-power"> … --sdp, --ssp, p:16sdp … use the power strategy (registered automatically) </section>
 ```
 
 They nest and combine (`class="ad-fluid ad-a"`). Explicit tokens such as `16sdpia` or `16pwsdp` also work anywhere.
@@ -217,7 +219,8 @@ With `a`, the satellite strategies multiply by `1 + k·ln(AR/1.78)` (default `k 
 Every formula is a direct port of the Kotlin kernels. `tests/parity.test.ts` checks all
 strategies × axes × inverters × flags against an independent transcription on 12 window sizes.
 
-Import a strategy module to register it; its CSS tokens are published from then on.
+A strategy registers itself on first use (a JS token, a class or `data-dimen` value, an `ad-<strategy>` class); its CSS tokens
+are published from then on. For hand-written `var(--fsdp)` or PostCSS output, list it: `install({ strategies: ['fluid'] })`.
 
 ## Runtime
 
@@ -279,15 +282,14 @@ expose the real DPI, so these use the CSS definition (1in = 96 px). Calibrate kn
 
 | call | ns/op |
 |---|---|
-| `sdp(v)` | ~11 |
-| `sdpa(v)`, `ssp(v)`, `pwsdp(v)` | ~12–13 |
-| `toDynamicScaledDp(v, HEIGHT, { applyAspectRatio })` | ~30 |
-| `builder.sdp` (memoized per snapshot) | ~26 |
+| `sdp(v)` | ~9 |
+| `sdpa(v)`, `ssp(v)`, `pwsdp(v)` | ~9–11 |
+| `toDynamicScaledDp(v, HEIGHT, { applyAspectRatio })` | ~27 |
+| `builder.sdp` (memoized per snapshot) | ~18 |
 
 The figures include the harness's indirect call (the baseline inline multiply measures ~2 ns).
-There are no allocations on the hot path. A tree-shaken app import (`sdp`, `ssp`, `install`,
-runtime and CSS publishing) bundles to ≈4.4 KB min+gzip, and each additional strategy module
-adds ≈0.3 KB gzip.
+There are no allocations on the hot path. Bundled and minified with gzip: `import { sdp }` ≈5.3 KB;
+`install()` (runtime, CSS variables, declarative compiler and every strategy definition) ≈8.8 KB.
 
 ## Development
 

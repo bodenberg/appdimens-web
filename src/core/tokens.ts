@@ -9,7 +9,8 @@
  * Token grammar (same as the Android names): `<prefix><s|h|w><dp|sp|em><Ph|Lh|Pw|Lw>?<a|i|ia>?<Px>?`.
  */
 import { DpQualifier } from './enums';
-import { S, sync, tableForPrefix } from './runtime';
+import { ensurePrefix } from './defs';
+import { S, sync } from './runtime';
 import { VARIANTS } from './strategy';
 
 /** Strategy name prefixes (Android prefix map) → strategy id / module. */
@@ -99,12 +100,8 @@ export function parseDimenLiteral(literal: string): { value: number; token: Pars
 }
 
 function resolveToken(value: number, t: ParsedToken): number {
-  const table = tableForPrefix(t.prefix);
-  if (!table) {
-    throw new Error(
-      `webdimens: "${t.name}" needs the ${t.strategy} strategy — import 'webdimens/${t.strategy}' (or any of its functions) first.`,
-    );
-  }
+  // Every strategy is known to the core: its table is registered on first use.
+  const table = ensurePrefix(t.prefix)!;
   if (S.dirty) sync();
   let out = value * table[t.slot]!;
   if (t.kind === 'sp') out *= S.fs;
@@ -124,18 +121,6 @@ export function dimen(input: string | number): number {
   throw new TypeError(`webdimens: cannot resolve "${input}" (expected e.g. "16sdp", "14ssp", "12px")`);
 }
 
-const warned = new Set<string>();
-
-/** Warns once (browser only) when a CSS token's strategy module has not been imported. */
-function warnUnregistered(t: ParsedToken): void {
-  if (typeof window === 'undefined' || tableForPrefix(t.prefix) || warned.has(t.prefix)) return;
-  warned.add(t.prefix);
-  console.warn(
-    `webdimens: "${t.name}" uses the ${t.strategy} strategy, which is not registered — import 'webdimens/${t.strategy}' ` +
-      `(the CDN bundle includes it) or var(--${t.name}) stays undefined.`,
-  );
-}
-
 /** CSS expression for one literal: `16sdp` → `calc(16 * var(--sdp))`; non-tokens are returned unchanged. */
 export function literalToCss(literal: string): string {
   const lit = parseDimenLiteral(literal);
@@ -145,7 +130,7 @@ export function literalToCss(literal: string): string {
       `webdimens: "${lit.token.name}" has no CSS token (Px and sp/em inverter variants are JS-only); use a dp token or dimen().`,
     );
   }
-  warnUnregistered(lit.token);
+  ensurePrefix(lit.token.prefix); // publishes var(--<token>) for this strategy
   return `calc(${lit.value} * var(--${lit.token.name}))`;
 }
 

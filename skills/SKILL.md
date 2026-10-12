@@ -6,8 +6,8 @@ description: Use this skill for any responsive sizing question on the web — ma
 # webdimens — project workflow
 
 **Library:** `webdimens` 3.2.0 — web port of AppDimens Dynamic 3.2.0 (Android). Same math, same names.
-**Install:** `npm i webdimens` (or `yarn add` / `pnpm add`) · CDN `https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js`.
-**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web).
+**Install:** `npm i webdimens` (or `yarn add` / `pnpm add`) · CDN `https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js`.
+**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web) · full docs in [docs/](../docs/README.md) (recipes: docs/recipes.md, troubleshooting: docs/troubleshooting.md).
 
 ---
 
@@ -44,7 +44,7 @@ Always call `install()` once in the app entry (the CDN script does it automatica
 - **Default: scaled** (`sdp`, `hdp`, `wdp`, `ssp`). Recommend it first.
 - `sdp` for spacing / radii / icons; `hdp` vertical rhythm; `wdp` width-driven columns; `ssp` text; `sem` text that must ignore the user's font setting (rare — prefer `ssp` for accessibility).
 - `a` suffix (`sdpa`) when very wide/tall windows look too large/small; `i` suffix only for split-screen policies.
-- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Import the module (`import 'webdimens/power'`) before using its tokens. Without it, `dimen('10pwsdp')` throws a clear error. A class such as `p:10pwsdp` still compiles to `calc(10 * var(--pwsdp))` and nothing is logged; while `--pwsdp` is undefined, that declaration is invalid at computed-value time and the property falls back to `unset`.
+- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Strategies register automatically the first time one of their tokens is used (`dimen('10pwsdp')`, `p:10pwsdp`, `data-dimen`, `class="ad-power"`). For tokens the runtime never sees — hand-written `var(--pwsdp)` or PostCSS output — add `install({ strategies: ['power'] })` (or `'all'`). Import the module only for its named functions (`pwsdp`, `powerDp`).
 - Subtree switch without renaming tokens: `class="ad-power"`, flags: `ad-a`, `ad-i`, `ad-ia`.
 
 ## Phase 3 — Conditions (Android qualifiers)

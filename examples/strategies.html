@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — strategies</title>
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    main { padding: calc(16 * var(--sdp)); }
+    .row { display: grid; grid-template-columns: 9em 1fr 5em; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; }
+    .bar { height: 14px; background: #4f46e5; border-radius: 3px; }
+    code { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 style="font-size: calc(20 * var(--ssp))">16 dp through the 12 strategies</h1>
+    <p>Bars are <code>width: calc(10 * var(--&lt;prefix&gt;sdp))</code>; the number is <code>dimen('16&lt;prefix&gt;sdp')</code>. Resize the window.</p>
+    <div id="rows"></div>
+  </main>
+  <script>
+    const { STRATEGY_PREFIXES, dimen, subscribe, getMetrics } = WebDimens;
+    const rows = document.getElementById('rows');
+    for (const [prefix, id] of Object.entries(STRATEGY_PREFIXES)) {
+      rows.insertAdjacentHTML('beforeend',
+        `<div class="row"><span>${id} <code>${prefix}sdp</code></span>` +
+        `<div class="bar" data-prefix="${prefix}" style="width: calc(10 * var(--${prefix}sdp))"></div><span data-value="${prefix}"></span></div>`);
+    }
+    const render = () => document.querySelectorAll('[data-value]').forEach((el) => {
+      el.textContent = dimen(`16${el.dataset.value}sdp`).toFixed(1) + 'px';
+    });
+    render();
+    subscribe(render);
+  </script>
+</body>
+</html>

@@ -5,7 +5,9 @@
 > `padding: 16sdp` in CSS (PostCSS plugin), dimen('14ssp') in JS. 12 strategies, Android qualifiers (@landscape, @sw600, @tv),
 > modifier classes (ad-a, ad-i, ad-power), resize, physical units, React/Vue/Svelte/Angular bindings.
 
+- [Documentation index](docs/README.md): every topic with runnable examples (pt-BR: docs/pt-BR/README.md)
 - [README](README.md): install, the five usage forms, strategies, runtime, performance
+- [Examples](examples/README.md): runnable demo pages
 - [README (pt-BR)](README.pt-BR.md)
 - [Agent skill](skills/SKILL.md): decision flow for applying the library
 - [API reference](skills/reference.md): every function, token grammar, conditions, formulas

@@ -1,0 +1,15 @@
+/* Build-time units: run `npx postcss input.css -o output.css` (see postcss.config.mjs). */
+.card {
+  padding: 8sdp 16sdp;
+  border-radius: 12sdp;
+  font-size: 14ssp;
+  margin: max(8sdp, 4px) auto;
+  background: url(/img/16sdp.png); /* never rewritten */
+
+  @dimen landscape { padding: 12sdp 24sdp; }
+  @dimen sw600 { padding: 24sdp 32sdp; }
+  @dimen tv { font-size: 28ssp; }
+  @dimen tv sw600 { padding: 48sdp; }
+}
+
+.chart { height: 220hdp; width: calc(100% - 2 * 16sdp); }
