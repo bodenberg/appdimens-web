@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — vanilla demo</title>
+  <!-- Optional: pure-CSS fallback tokens so the first paint is already scaled. -->
+  <link rel="stylesheet" href="../css/webdimens.css" />
+  <!-- CDN: https://cdn.jsdelivr.net/npm/webdimens@3.2.0/dist/webdimens.global.js -->
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: Canvas; color: CanvasText; }
+    /* Declarative usage — the same tokens as Android: 16.sdp → calc(16 * var(--sdp)) */
+    .page { padding: calc(16 * var(--sdp)); display: grid; grid-template-columns: minmax(0, 1fr); gap: calc(12 * var(--sdp)); }
+    .card {
+      padding: calc(16 * var(--sdp));
+      border-radius: calc(12 * var(--sdp));
+      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+    }
+    .title { font-size: calc(22 * var(--ssp)); margin: 0 0 calc(8 * var(--sdp)); }
+    .body { font-size: calc(14 * var(--ssp)); margin: 0; line-height: 1.4; }
+    .hero { height: calc(120 * var(--hdp)); background: linear-gradient(135deg, #4f46e5, #06b6d4); border-radius: calc(12 * var(--sdp)); }
+    .power { width: calc(100 * var(--pwsdp)); height: calc(24 * var(--sdp)); background: #f59e0b; border-radius: 4px; }
+    .fit { display: flex; align-items: center; width: 100%; height: calc(56 * var(--sdp)); border: 1px dashed currentColor; overflow: hidden; white-space: nowrap; }
+    code { font-size: calc(12 * var(--sem)); }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="hero"></div>
+    <section class="card">
+      <h1 class="title">AppDimens Dynamic for the web</h1>
+      <p class="body">Every size on this page scales with the viewport exactly like <code>16.sdp</code> on Android.</p>
+    </section>
+    <section class="card">
+      <p class="body">Power strategy bar (<code>100 pwsdp</code>):</p>
+      <div class="power" id="power"></div>
+    </section>
+    <section class="card">
+      <div class="fit" id="fit">Auto-resized headline that always fits its box</div>
+    </section>
+    <section class="card"><pre class="body" id="metrics"></pre></section>
+  </main>
+  <script>
+    const { sdp, ssp, pwsdp, subscribe, getMetrics, autoResizeText, scaledDp, UiModeType, DpQualifier } = WebDimens;
+    const metricsEl = document.getElementById('metrics');
+    // Builder with Android-like screen() rules.
+    const gutter = scaledDp(16).screen(UiModeType.TELEVISION, 40).screen(DpQualifier.SMALL_WIDTH, 600, 24);
+    function render(m) {
+      metricsEl.textContent = [
+        `window      ${m.screenWidthDp} × ${m.screenHeightDp} dp (sw ${m.smallestWidthDp})`,
+        `orientation ${m.orientation} · uiMode ${m.uiModeType} · density ${m.density} · fontScale ${m.fontScale}`,
+        `sdp(16) = ${sdp(16).toFixed(2)} px · ssp(14) = ${ssp(14).toFixed(2)} px · pwsdp(100) = ${pwsdp(100).toFixed(2)} px`,
+        `builder gutter = ${gutter.sdp.toFixed(2)} px`,
+      ].join('\n');
+    }
+    render(getMetrics());
+    subscribe(render);
+    autoResizeText(document.getElementById('fit'), { min: 10, max: 48 });
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — CSS only</title>
+  <!-- No JavaScript: linear strategies are exact in pure CSS (no aspect-ratio "a" correction). -->
+  <link rel="stylesheet" href="../css/webdimens.css" />
+  <link rel="stylesheet" href="../css/strategies/fluid.css" />
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    .box { margin: calc(16 * var(--sdp)); padding: calc(16 * var(--sdp)); background: #e0e7ff; border-radius: calc(8 * var(--sdp)); }
+    .box h1 { font-size: calc(24 * var(--ssp)); margin: 0; }
+    .box p { font-size: calc(14 * var(--fsdp)); }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Pure CSS tokens</h1>
+    <p>Padding uses <code>--sdp</code>; this text uses the fluid strategy (<code>--fsdp</code>).</p>
+  </div>
+</body>
+</html>

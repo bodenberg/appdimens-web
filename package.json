@@ -1,79 +1,259 @@
 {
   "name": "webdimens",
-  "version": "2.0.0",
-  "description": "AppDimens 2.0 - Sistema avançado de dimensionamento responsivo para web com 13 estratégias de escala e inferência inteligente",
+  "version": "3.2.0",
+  "description": "AppDimens Dynamic for the web — responsive dp/sp scaling (sdp, hdp, wdp, ssp…) with the exact Android math, 12 scaling strategies, CSS custom properties and zero-allocation hot paths.",
   "author": "Jean Bodenberg",
   "license": "Apache-2.0",
+  "type": "module",
   "keywords": [
+    "appdimens",
+    "appdimens-dynamic",
     "responsive",
+    "sdp",
+    "ssp",
+    "dp",
+    "sp",
+    "scaling",
     "dimensions",
-    "layout",
-    "css",
-    "viewport",
-    "breakpoints",
-    "container-queries",
-    "design-system"
+    "css-variables",
+    "design-tokens",
+    "react",
+    "vue",
+    "svelte",
+    "angular"
   ],
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/webdimens.global.js",
+  "jsdelivr": "./dist/webdimens.global.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./percent": {
+      "import": {
+        "types": "./dist/percent.d.ts",
+        "default": "./dist/percent.js"
+      },
+      "require": {
+        "types": "./dist/percent.d.cts",
+        "default": "./dist/percent.cjs"
+      }
+    },
+    "./power": {
+      "import": {
+        "types": "./dist/power.d.ts",
+        "default": "./dist/power.js"
+      },
+      "require": {
+        "types": "./dist/power.d.cts",
+        "default": "./dist/power.cjs"
+      }
+    },
+    "./fluid": {
+      "import": {
+        "types": "./dist/fluid.d.ts",
+        "default": "./dist/fluid.js"
+      },
+      "require": {
+        "types": "./dist/fluid.d.cts",
+        "default": "./dist/fluid.cjs"
+      }
+    },
+    "./auto": {
+      "import": {
+        "types": "./dist/auto.d.ts",
+        "default": "./dist/auto.js"
+      },
+      "require": {
+        "types": "./dist/auto.d.cts",
+        "default": "./dist/auto.cjs"
+      }
+    },
+    "./diagonal": {
+      "import": {
+        "types": "./dist/diagonal.d.ts",
+        "default": "./dist/diagonal.js"
+      },
+      "require": {
+        "types": "./dist/diagonal.d.cts",
+        "default": "./dist/diagonal.cjs"
+      }
+    },
+    "./fill": {
+      "import": {
+        "types": "./dist/fill.d.ts",
+        "default": "./dist/fill.js"
+      },
+      "require": {
+        "types": "./dist/fill.d.cts",
+        "default": "./dist/fill.cjs"
+      }
+    },
+    "./fit": {
+      "import": {
+        "types": "./dist/fit.d.ts",
+        "default": "./dist/fit.js"
+      },
+      "require": {
+        "types": "./dist/fit.d.cts",
+        "default": "./dist/fit.cjs"
+      }
+    },
+    "./interpolated": {
+      "import": {
+        "types": "./dist/interpolated.d.ts",
+        "default": "./dist/interpolated.js"
+      },
+      "require": {
+        "types": "./dist/interpolated.d.cts",
+        "default": "./dist/interpolated.cjs"
+      }
+    },
+    "./logarithmic": {
+      "import": {
+        "types": "./dist/logarithmic.d.ts",
+        "default": "./dist/logarithmic.js"
+      },
+      "require": {
+        "types": "./dist/logarithmic.d.cts",
+        "default": "./dist/logarithmic.cjs"
+      }
+    },
+    "./perimeter": {
+      "import": {
+        "types": "./dist/perimeter.d.ts",
+        "default": "./dist/perimeter.js"
+      },
+      "require": {
+        "types": "./dist/perimeter.d.cts",
+        "default": "./dist/perimeter.cjs"
+      }
+    },
+    "./density": {
+      "import": {
+        "types": "./dist/density.d.ts",
+        "default": "./dist/density.js"
+      },
+      "require": {
+        "types": "./dist/density.d.cts",
+        "default": "./dist/density.cjs"
+      }
+    },
+    "./resize": {
+      "import": {
+        "types": "./dist/resize.d.ts",
+        "default": "./dist/resize.js"
+      },
+      "require": {
+        "types": "./dist/resize.d.cts",
+        "default": "./dist/resize.cjs"
+      }
+    },
+    "./units": {
+      "import": {
+        "types": "./dist/units.d.ts",
+        "default": "./dist/units.js"
+      },
+      "require": {
+        "types": "./dist/units.d.cts",
+        "default": "./dist/units.cjs"
+      }
     },
     "./react": {
-      "types": "./dist/integrations/react.d.ts",
-      "import": "./dist/integrations/react.mjs",
-      "require": "./dist/integrations/react.js"
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
     },
     "./vue": {
-      "types": "./dist/integrations/vue.d.ts",
-      "import": "./dist/integrations/vue.mjs",
-      "require": "./dist/integrations/vue.js"
+      "import": {
+        "types": "./dist/vue.d.ts",
+        "default": "./dist/vue.js"
+      },
+      "require": {
+        "types": "./dist/vue.d.cts",
+        "default": "./dist/vue.cjs"
+      }
     },
     "./svelte": {
-      "types": "./dist/integrations/svelte.d.ts",
-      "import": "./dist/integrations/svelte.mjs",
-      "require": "./dist/integrations/svelte.js"
+      "import": {
+        "types": "./dist/svelte.d.ts",
+        "default": "./dist/svelte.js"
+      },
+      "require": {
+        "types": "./dist/svelte.d.cts",
+        "default": "./dist/svelte.cjs"
+      }
     },
     "./angular": {
-      "types": "./dist/integrations/angular.d.ts",
-      "import": "./dist/integrations/angular.mjs",
-      "require": "./dist/integrations/angular.js"
-    }
+      "import": {
+        "types": "./dist/angular.d.ts",
+        "default": "./dist/angular.js"
+      },
+      "require": {
+        "types": "./dist/angular.d.cts",
+        "default": "./dist/angular.cjs"
+      }
+    },
+    "./css": "./css/webdimens.css",
+    "./webdimens.css": "./css/webdimens.css",
+    "./scss": "./scss/_webdimens.scss",
+    "./_webdimens.scss": "./scss/_webdimens.scss",
+    "./global": "./dist/webdimens.global.js",
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
+    "css",
+    "scss",
     "README.md",
+    "README.pt-BR.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "prepublishOnly": "npm run build"
+    "generate": "node scripts/generate.mjs",
+    "build": "npm run generate && node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "bench": "vitest bench --run",
+    "check": "npm run generate -- --check && npm run typecheck && npm test && npm run build && node scripts/verify-dist.mjs",
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@typescript-eslint/eslint-plugin": "^6.13.0",
-    "@typescript-eslint/parser": "^6.13.0",
-    "eslint": "^8.55.0",
-    "jsdom": "^27.1.0",
-    "prettier": "^3.1.0",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
-    "vitest": "^1.0.4"
+    "@angular/core": "^18.2.0",
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.0",
+    "jsdom": "^25.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rxjs": "^7.8.1",
+    "sass": "^1.80.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "vue": "^3.5.0"
   },
   "peerDependencies": {
-    "@angular/core": ">=12.0.0",
+    "@angular/core": ">=16.0.0",
     "react": ">=16.8.0",
-    "rxjs": ">=6.0.0",
-    "svelte": ">=3.0.0",
     "vue": ">=3.0.0"
   },
   "peerDependenciesMeta": {
@@ -83,23 +263,19 @@
     "vue": {
       "optional": true
     },
-    "svelte": {
-      "optional": true
-    },
     "@angular/core": {
-      "optional": true
-    },
-    "rxjs": {
       "optional": true
     }
   },
+  "engines": {
+    "node": ">=18"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bodenberg/appdimens.git",
-    "directory": "Web"
+    "url": "git+https://github.com/bodenberg/appdimens-web.git"
   },
   "bugs": {
-    "url": "https://github.com/bodenberg/appdimens/issues"
+    "url": "https://github.com/bodenberg/appdimens-web/issues"
   },
-  "homepage": "https://github.com/bodenberg/appdimens#readme"
+  "homepage": "https://github.com/bodenberg/appdimens-web#readme"
 }
