@@ -44,7 +44,7 @@ Always call `install()` once in the app entry (the CDN script does it automatica
 - **Default: scaled** (`sdp`, `hdp`, `wdp`, `ssp`). Recommend it first.
 - `sdp` for spacing / radii / icons; `hdp` vertical rhythm; `wdp` width-driven columns; `ssp` text; `sem` text that must ignore the user's font setting (rare — prefer `ssp` for accessibility).
 - `a` suffix (`sdpa`) when very wide/tall windows look too large/small; `i` suffix only for split-screen policies.
-- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Import the module (`import 'webdimens/power'`) before using its tokens — classes/`dimen()` with an unregistered strategy have no CSS variable / throw a clear error.
+- Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Import the module (`import 'webdimens/power'`) before using its tokens. Without it, `dimen('10pwsdp')` throws a clear error, but a class such as `p:10pwsdp` still compiles to an undefined `var(--pwsdp)`, so its declaration has no effect and nothing is logged.
 - Subtree switch without renaming tokens: `class="ad-power"`, flags: `ad-a`, `ad-i`, `ad-ia`.
 
 ## Phase 3 — Conditions (Android qualifiers)
@@ -62,7 +62,7 @@ Text that must fit a box: `autoResizeText(el, { min: 12, max: 34, maxLines: 2 })
 
 ## Rules
 
-1. Never mix px and dimension units for the same token family in one component without a reason; convert `16px` → `16sdp` 1:1 when porting an Android/Figma spec at 300–360 dp width.
+1. Never mix px and dimension units for the same token family in one component without a reason. Port Android `16.sdp` as `16sdp` 1:1, and keep literal px for values that must not scale with the viewport.
 2. Prefer CSS forms for layout (no re-render, SSR-safe). Use JS numbers only for canvas/measurement, wrapped in `useDimens()` / `useDimen()` (React) or the framework equivalent.
 3. `Px` suffix = **device** pixels (× devicePixelRatio) — only for canvas/WebGL. CSS px = no suffix.
 4. Don't recommend `i` variants or `@mw` unless the user asks about split-screen behaviour.

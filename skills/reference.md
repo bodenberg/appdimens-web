@@ -23,7 +23,7 @@ Grammar: `<prefix><axis><kind><inverter>?<flags>?<Px>?`
 | prefix | `''` scaled · `p` percent · `pw` power · `f` fluid · `a` auto · `dg` diagonal · `fl` fill · `ft` fit · `i` interpolated · `log` logarithmic · `pr` perimeter · `d` density |
 | axis | `s` smallest width · `h` height · `w` width |
 | kind | `dp` layout · `sp` text × font scale · `em` text, no font scale |
-| inverter | `s`: `Ph Lh Pw Lw` · `h`: `Lw Pw` · `w`: `Lh Ph` (P/L = portrait/landscape, h/w = axis used then) |
+| inverter | orientation-specific axis, as in Android: `s`: `Ph Lh Pw Lw` · `h`: `Lw Pw` · `w`: `Lh Ph` |
 | flags | `a` aspect ratio · `i` ignore multi-window · `ia` both |
 | `Px` | device pixels (JS only) |
 

@@ -26,7 +26,7 @@
 | `values-sw600dp` / `.screen(DpQualifier.SMALL_WIDTH, 600, …)` | `@sw600` · `sdpQualifier(...)` · `scaledDp().screen(...)` |
 | `UiModeType.TELEVISION` | `@tv`, `<html data-ad-mode="tv">`, `UiModeType.TELEVISION` |
 | `Inverter.SW_TO_LH` (`sdpLh`) | `sdpLh(16)`, `16sdpLh`, `var(--sdpLh)` |
-| `ignoreMultiWindows` (`i`) | `sdpi`, `class="ad-i"`, `@mw` condition |
+| `ignoreMultiWindows` (`i`) | `sdpi`, `class="ad-i"`. `@mw` is web-only: it tests the multi-window flag and has no Android qualifier |
 | `applyAspectRatio` (`a`) | `sdpa`, `class="ad-a"` |
 | `autoResizeTextSp` (BoxWithConstraints) | `autoResizeText(el, …)` |
 

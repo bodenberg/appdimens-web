@@ -126,8 +126,7 @@ import { dimen } from 'webdimens/svelte';          // Svelte: const pad = dimen(
 import { provideWebDimens, injectDimen } from 'webdimens/angular'; // Angular 16+: Signal<number>
 ```
 
-Em SSR, as classes, o `data-dimen`, o `dimens()` e os tokens CSS renderizam igual no servidor e no cliente. Para o primeiro paint,
-pré-compile as regras das classes com `dimenClassesToCss([...])` ou use o plugin PostCSS.
+Em SSR, a marcação é igual no servidor e no cliente. As regras das classes e do `data-dimen` são CSS: para o primeiro paint, pré-compile-as com `dimenClassesToCss([...])` ou use o plugin PostCSS. O `dimens()` e os tokens `var(--sdp)` precisam que os tokens existam, então importe também `webdimens/css` (fallback em CSS puro).
 
 ## Mapeamento Android → web
 

@@ -137,8 +137,7 @@ const size = useDimen(() => dimen('48sdp'));
 // Angular 16+: providers: [provideWebDimens()];        pad = injectDimen(() => sdp(16))
 ```
 
-> **SSR:** classes, `data-dimen`, `dimens()` and CSS tokens render identically on server and client.
-> Pre-compile class rules for the first paint with `dimenClassesToCss(['p:16sdp', …])`, or use the PostCSS plugin.
+> **SSR:** the markup is identical on server and client. Class and `data-dimen` rules are CSS, so pre-compile them for the first paint with `dimenClassesToCss(['p:16sdp', …])` or the PostCSS plugin. `dimens()` and the `var(--sdp)` tokens need the tokens to exist, so also import `webdimens/css` (pure-CSS fallback).
 
 ---
 
