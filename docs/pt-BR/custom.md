@@ -11,7 +11,7 @@ Uma estratégia é um objeto simples que transforma a janela atual (viewport ou 
 ```
 razão  = eixo(janela) / eixo(referência)
 fator  = clamp( curva(razão) × multiplicador × AR , clamp.min, clamp.max )
-px     = transform( valueClamp( valor × fator ) )
+px     = formula( valueClamp( valor × fator ) )
 ```
 
 Regras podem sobrescrever qualquer campo por **classe de dispositivo** (`phone`, `tablet`, `desktop`, `tv`, `watch`, `car`, `vr`), **faixa de tela** (menor largura, largura, altura, proporção), **orientação** e **multi-janela**.
@@ -64,6 +64,7 @@ cdp(16);   // usa brand; antes de definir um padrão, é igual a sdp(16)
 | `aspectRatio` | `true` ou `{ enabled: true, sensitivity: 0.004 }` | desligado, k = 0.08 / 30 |
 | `fontScale` | `'follow'` · `'ignore'` · `{ max: 1.3 }` | `'follow'` |
 | `ignoreMultiWindow` | `true` → fator 1 em janela dividida | `false` |
+| `formula` | `'round(scaled)'` — fórmula por valor em texto (JSON) | nenhum |
 | `transform` | `(base, scaled, screen) => Math.round(scaled)` (só código) | nenhum |
 | `rules` | `[{ name?, when: {…}, set: {…} }]` | nenhuma |
 | `extends` | `'power'`, `'tabletFriendly'`, outro id | — |
@@ -76,7 +77,30 @@ cdp(16);   // usa brand; antes de definir um padrão, é igual a sdp(16)
 | `{ type: 'interpolated', t }` | `1 + (r − 1)·t` (a embutida usa 0.5) |
 | `{ type: 'constant', factor }` | fator fixo |
 | `{ type: 'breakpoints', points: [{ at: 360, factor: 1 }, { at: 840, factor: 1.5 }] }` | linear por partes sobre o valor **absoluto** do eixo |
+| `{ type: 'expression', expression: 'pow(ratio, 0.8)' }` | sua fórmula, como texto (serializável em JSON) — veja abaixo |
 | `{ type: 'custom', fn: (ratio, screen) => … }` | sua fórmula pura (só código) |
+
+### Fórmulas livres (sem os limites das curvas embutidas)
+
+Você não fica preso às curvas embutidas: escreva a fórmula você mesmo, como **texto**, que funciona também no JSON e dá o mesmo resultado em todas as plataformas AppDimens:
+
+- **Curva por expressão** — devolve o **fator** a partir da tela. É calculada uma vez por janela, como qualquer curva, e continua na via rápida de uma multiplicação.
+  `curve: { type: 'expression', expression: 'pow(ratio, 0.8) * (tablet ? 0.9 : 1)' }`
+- **Fórmula** — devolve o **valor final** de cada entrada. Pode usar `base`, `scaled` e `factor`, e substitui ou pós-processa o resultado. A estratégia passa a depender do valor.
+  `formula: 'base * pow(sw / 360, 0.7) + 2'` · `formula: 'max(scaled, base)'`
+
+| | |
+|---|---|
+| Operadores | `+ - * / % ^` (`^` = potência, associativa à direita; `%` mantém o sinal do dividendo), `== != < <= > >=`, `&& \|\| !`, `cond ? a : b`, `( )` |
+| Funções | `min(a, b, …)` `max(a, b, …)` `clamp(x, lo, hi)` `pow` `sqrt` `ln`/`log` `log10` `log2` `exp` `abs` `sign` `floor` `ceil` `round` (meio para cima) `lerp(a, b, t)` `step(edge, x)` `smoothstep(e0, e1, x)` |
+| Variáveis de tela | `sw` `width` `height` `shortSide` `longSide` `diagonal` `perimeter` `aspectRatio` `density` `fontScale`; flags (1/0): `landscape` `portrait` `multiWindow` `phone` `tablet` `desktop` `tv` `watch` `car` `vr`; constantes `pi` `e`, `true` / `false` |
+| Variáveis de curva | as de tela + `ratio` (eixo / referência), `axis` (dp), `ref` (dp de referência), `refWidth`, `refHeight` |
+| Variáveis de fórmula | as de curva + `base` (entrada), `scaled` (base × fator após `valueClamp`), `factor` |
+
+As expressões são analisadas quando a estratégia é criada. Variáveis ou funções desconhecidas, aridade errada e erros de sintaxe falham cedo, com a posição e o caminho no JSON (ex.: `brand.rules[0].set.curve.expression`). Um fator não finito (por exemplo, divisão por zero) lança erro ao resolver. Regras podem trocar expressões por dispositivo, e `formula: null` limpa uma fórmula herdada.
+
+Para o que a linguagem não expressa, use uma função só de código: `{ type: 'custom', fn: (ratio, screen) => … }` (fator) ou `transform: (base, scaled, screen) => …` (valor).
+
 
 **Como as regras se aplicam:**
 - Todo campo definido em `when` precisa casar. As faixas são `min <= valor < max`.
@@ -129,7 +153,7 @@ O literal funciona em todo lugar onde `16sdp` funciona (`dimens()`, `dimenCss()`
 
 - Em JS, `dimen('16cdp-brand')` e `dimensPx()` resolvem o literal pelo registro.
 - Se o seu CSS usa só `16cdp` / `var(--cdp)` sem definir nenhuma estratégia, chame `installCustomCss()` uma vez.
-- Estratégias com `valueClamp` ou `transform` dependem do valor, então `brand.css(v)` devolve um literal em px do snapshot atual em vez de um `var()`.
+- Estratégias com `valueClamp`, `formula` ou `transform` dependem do valor, então `brand.css(v)` devolve um literal em px do snapshot atual em vez de um `var()`.
 - Para um escopo de elemento, escreva `customCssDeclarations(scope.metrics)` no elemento.
 
 ## Frameworks

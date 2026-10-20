@@ -8,7 +8,7 @@
 | `webdimens/<strategy>` | percent (+ `space*`), power, fluid, auto, diagonal, fill, fit, interpolated, logarithmic, perimeter, density | `appdimens-dynamic-<strategy>` |
 | `webdimens/resize` | `autoResizeText`, `fittingTextSize`, `fittingTextPx`, `fittingBoxPx`, bounds | `appdimens-dynamic-resize` |
 | `webdimens/units` | `mm`, `cm`, `inch`, conversions, `radius` | `appdimens-dynamic-units` |
-| `webdimens/custom` | custom strategies: `defineScalingStrategy`, `loadScalingStrategies`, `cdp` / `csp` / `cdpCss`, `CustomPresets`, `BuiltInStrategies`, CSS vars `--cdp-<id>` | `appdimens-dynamic-custom` |
+| `webdimens/custom` | custom strategies: `defineScalingStrategy`, `loadScalingStrategies`, `cdp` / `csp` / `cdpCss`, `ScalingExpression` (free-form formulas), `CustomPresets`, `BuiltInStrategies`, CSS vars `--cdp-<id>` | `appdimens-dynamic-custom` |
 | `webdimens/postcss` | PostCSS plugin (`16sdp` in CSS, `@dimen` blocks) | — |
 | `webdimens/react` · `/vue` · `/svelte` · `/angular` | framework bindings | Compose `AppDimensProvider` |
 | `webdimens/css` · `webdimens/css/all.css` | pure-CSS fallback tokens | — |

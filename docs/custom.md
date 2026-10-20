@@ -11,7 +11,7 @@ A strategy is a plain object that turns the current window (viewport or [element
 ```
 ratio  = axis(window) / axis(reference)
 factor = clamp( curve(ratio) × multiplier × AR , clamp.min, clamp.max )
-px     = transform( valueClamp( value × factor ) )
+px     = formula( valueClamp( value × factor ) )
 ```
 
 Rules override any field per **device class** (`phone`, `tablet`, `desktop`, `tv`, `watch`, `car`, `vr`), **screen range** (smallest width, width, height, aspect ratio), **orientation** and **multi-window**.
@@ -64,6 +64,7 @@ cdp(16);   // uses brand; before any default it equals sdp(16)
 | `aspectRatio` | `true` or `{ enabled: true, sensitivity: 0.004 }` | off, k = 0.08 / 30 |
 | `fontScale` | `'follow'` · `'ignore'` · `{ max: 1.3 }` | `'follow'` |
 | `ignoreMultiWindow` | `true` → factor 1 in split windows | `false` |
+| `formula` | `'round(scaled)'` — per-value text formula (JSON) | none |
 | `transform` | `(base, scaled, screen) => Math.round(scaled)` (code only) | none |
 | `rules` | `[{ name?, when: {…}, set: {…} }]` | none |
 | `extends` | `'power'`, `'tabletFriendly'`, another id | — |
@@ -76,7 +77,39 @@ cdp(16);   // uses brand; before any default it equals sdp(16)
 | `{ type: 'interpolated', t }` | `1 + (r − 1)·t` (built-in uses 0.5) |
 | `{ type: 'constant', factor }` | fixed factor |
 | `{ type: 'breakpoints', points: [{ at: 360, factor: 1 }, { at: 840, factor: 1.5 }] }` | piecewise linear over the **absolute** axis value |
+| `{ type: 'expression', expression: 'pow(ratio, 0.8)' }` | your formula, as text (JSON-serializable) — see below |
 | `{ type: 'custom', fn: (ratio, screen) => … }` | your pure formula (code only) |
+
+### Free-form formulas (no limits from the built-in curves)
+
+You are not limited to the built-in curves. Write the formula yourself, as **text** that also works in JSON and gives the same result on every AppDimens platform:
+
+- **Curve expression** returns the **factor** from the screen. It is computed once per window, like any curve, and stays on the one-multiply fast path.
+  `"curve": {"type": "expression", "expression": "pow(ratio, 0.8) * (tablet ? 0.9 : 1)"}`
+- **Formula** returns the **final value** for each input. It can use `base`, `scaled` and `factor`, and replaces or post-processes the result. The strategy then becomes value-dependent, so results are cached per window.
+  `"formula": "base * pow(sw / 360, 0.7) + 2"` · `"formula": "max(scaled, base)"`
+
+| | |
+|---|---|
+| Operators | `+ - * / % ^` (`^` = power, right-associative; `%` keeps the dividend's sign), `== != < <= > >=`, `&& \|\| !`, `cond ? a : b`, `( )` |
+| Functions | `min(a, b, …)` `max(a, b, …)` `clamp(x, lo, hi)` `pow` `sqrt` `ln`/`log` `log10` `log2` `exp` `abs` `sign` `floor` `ceil` `round` (half up) `lerp(a, b, t)` `step(edge, x)` `smoothstep(e0, e1, x)` |
+| Screen variables | `sw` `width` `height` `shortSide` `longSide` `diagonal` `perimeter` `aspectRatio` `density` `fontScale`; flags (1/0): `landscape` `portrait` `multiWindow` `phone` `tablet` `desktop` `tv` `watch` `car` `vr`; constants `pi` `e`, `true` / `false` |
+| Curve variables | screen variables + `ratio` (axis / reference), `axis` (dp), `ref` (reference dp), `refWidth`, `refHeight` |
+| Formula variables | curve variables + `base` (input), `scaled` (base × factor after `valueClamp`), `factor` |
+
+Expressions are parsed when the strategy is created. Unknown variables or functions, wrong arity and syntax errors fail early with the position and the JSON path (e.g. `brand.rules[0].set.curve.expression`). A non-finite factor (for example, a division by zero) throws when the strategy resolves. Rules can swap expressions per device like any other field, and `"formula": null` clears an inherited formula.
+
+For anything the language cannot express, use a code-only function: `{ type: 'custom', fn: (ratio, screen) => … }` (factor) or `transform: (base, scaled, screen) => …` (value). Both have full access to your code, but they cannot be serialized to JSON.
+
+```ts
+const hud = defineScalingStrategy({
+  id: 'hud',
+  curve: { type: 'expression', expression: 'clamp(pow(shortSide / 360, 0.85) * (1 + 0.05 * log(aspectRatio / 1.78)), 0.8, 2)' },
+  formula: 'round(scaled)',                       // whole px only
+  rules: [{ when: { device: 'tv' }, set: { curve: { type: 'expression', expression: 'height / 540' } } }],
+});
+```
+
 
 **How rules apply:**
 - Every field set in `when` must match. Ranges are `min <= value < max`.
@@ -123,7 +156,7 @@ The literal syntax works everywhere `16sdp` works (`dimens()`, `dimenCss()`, `<s
 
 - In JS, `dimen('16cdp-brand')` and `dimensPx()` resolve the literal through the registry.
 - If your CSS only uses `16cdp` / `var(--cdp)` without defining any strategy, call `installCustomCss()` once.
-- Strategies with `valueClamp` or `transform` depend on the value, so `brand.css(v)` returns a px literal for the current snapshot instead of a `var()`.
+- Strategies with `valueClamp`, `formula` or `transform` depend on the value, so `brand.css(v)` returns a px literal for the current snapshot instead of a `var()`.
 - For an element scope, write `customCssDeclarations(scope.metrics)` on the element.
 
 ## Frameworks

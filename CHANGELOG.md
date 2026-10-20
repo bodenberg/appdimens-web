@@ -3,7 +3,7 @@
 ## Unreleased
 
 - **New entry `webdimens/custom`: custom scaling strategies.** Port of the Android module `appdimens-dynamic-custom`.
-  - **Config format:** the same as every AppDimens platform (`custom-strategy.schema.json`). It covers reference frame, axis, curves (linear, power, logarithmic, interpolated, constant, breakpoints, function), factor and value bounds, aspect ratio, font-scale policy, and rules per device class / screen range / orientation / multi-window.
+  - **Config format:** the same as every AppDimens platform (`custom-strategy.schema.json`). It covers reference frame, axis, curves (linear, power, logarithmic, interpolated, constant, breakpoints, free-form text `expression`, function), a per-value text `formula`, factor and value bounds, aspect ratio, font-scale policy, and rules per device class / screen range / orientation / multi-window.
   - **Composition:** `extends` built-ins and presets.
   - **APIs:** `cdp` / `csp` / `cdpPx` / `cspPx`, `brand.css(16)`, and the CSS variables `--cdp-<id>` / `--csp-<id>`.
   - **Literals:** `16cdp-brand` works in `dimens()`, `dimenCss()`, `<style data-webdimens>` and the PostCSS plugin.

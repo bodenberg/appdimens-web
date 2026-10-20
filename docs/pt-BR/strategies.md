@@ -168,7 +168,7 @@ dependem do tamanho da janela. Raramente é o que um layout web precisa; é forn
 
 ## Personalizada — `webdimens/custom` · `cdp` / `csp`
 
-Quando nenhuma das doze curvas serve, defina a sua: frame de referência, eixo, curva (`linear`, `power`, `logarithmic`, `interpolated`, `constant`, `breakpoints` ou uma função), limites de fator e de valor, política de font scale e regras por classe de dispositivo / faixa de tela / orientação. Use como `cdp(16, brand)`, `brand.css(16)` ou `16cdp-brand`. O mesmo JSON funciona em todas as plataformas AppDimens. Veja [Estratégias personalizadas](./custom.md).
+Quando nenhuma das doze curvas serve, defina a sua: frame de referência, eixo, curva (`linear`, `power`, `logarithmic`, `interpolated`, `constant`, `breakpoints`, uma `expression` livre em texto ou uma função; além de uma `formula` por valor), limites de fator e de valor, política de font scale e regras por classe de dispositivo / faixa de tela / orientação. Use como `cdp(16, brand)`, `brand.css(16)` ou `16cdp-brand`. O mesmo JSON funciona em todas as plataformas AppDimens. Veja [Estratégias personalizadas](./custom.md).
 
 ## Usando várias estratégias
 

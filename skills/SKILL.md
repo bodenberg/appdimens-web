@@ -51,8 +51,9 @@ Always call `install()` once in the app entry (the CDN script does it automatica
   2. Keep one source: a JSON file loaded with `loadScalingStrategies`, or one module that calls `defineScalingStrategy`. Reuse the ids from `appdimens.config.json` (`customStrategies`) when present.
   3. Express device or screen differences as `rules` (`when: { device: 'tv' }`, `when: { width: { min: 1024 } }`), never as `if`s at call sites.
   4. Use `cdp(16, brand)` / `csp(14, brand)` in JS, and `brand.css(16)` / `16cdp-brand` for responsive SSR-safe CSS. In frameworks use `useScalingStrategy()`.
-  5. `valueClamp` / `transform` make the strategy value-dependent, so `css()` falls back to px literals. Use them only for hard limits.
-  6. Verify with `brand.explain()` on a phone, a tablet and a desktop width.
+  5. When no curve fits, write the law as text: `curve: { type: 'expression', expression: '…' }` (factor, stays CSS-var friendly) or `formula: '…'` (per value). Prefer them over JS functions when the strategy lives in JSON or is shared with other platforms.
+  6. `valueClamp` / `formula` / `transform` make the strategy value-dependent, so `css()` falls back to px literals. Use them only for hard limits.
+  7. Verify with `brand.explain()` on a phone, a tablet and a desktop width.
 
 ## Phase 3 — Conditions (Android qualifiers)
 

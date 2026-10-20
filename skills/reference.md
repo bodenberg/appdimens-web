@@ -106,7 +106,8 @@ Angular `provideWebDimens(opts?)`, `injectDimens()`, `injectDimen(fn)`.
 - **Define:** `defineScalingStrategy({ id, reference?, axis?, curve?, multiplier?, clamp?, valueClamp?, aspectRatio?, fontScale?, ignoreMultiWindow?, transform?, rules?, extends? })`. It registers the strategy.
 - **JSON:** `loadScalingStrategies(json)` registers every strategy and applies `default`. Export with `exportScalingStrategies()`.
 - **Axis:** `smallestWidth` · `width` · `height` · `min` · `max` · `diagonal` · `perimeter`.
-- **Curves:** `linear` · `power(exponent)` · `logarithmic(k)` · `interpolated(t)` · `constant(factor)` · `breakpoints(points[{at, factor}])` · `custom(fn)`.
+- **Curves:** `linear` · `power(exponent)` · `logarithmic(k)` · `interpolated(t)` · `constant(factor)` · `breakpoints(points[{at, factor}])` · `expression(text)` · `custom(fn)`.
+- **Free-form formulas:** `curve: { type: 'expression', expression: 'pow(ratio, 0.8) * (tablet ? 0.9 : 1)' }` (factor, memoized) and `formula: 'base * pow(sw / 360, 0.7) + 2'` (per value). Variables `sw width height shortSide longSide diagonal perimeter aspectRatio density fontScale`, flags `landscape portrait multiWindow phone tablet desktop tv watch car vr`, `ratio axis ref refWidth refHeight` (curve), `base scaled factor` (formula); functions `min max clamp pow sqrt ln log log10 log2 exp abs sign floor ceil round lerp step smoothstep`; `ScalingExpression.parse` validates early. Same results on every AppDimens platform.
 - **Rules:** `{ name?, when: { device?, orientation?, smallestWidth?, width?, height?, aspectRatio?: {min?, max?}, multiWindow? }, set: { …fields } }`. Ranges are `min <= v < max`. Matching rules apply in order, and a later rule wins.
 - **Use:**
   - `cdp(v, s?)` / `cdpPx` / `csp` / `cspPx` (default strategy = `BuiltInStrategies.SCALED` until `setDefaultScalingStrategy`).

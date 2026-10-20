@@ -41,6 +41,7 @@ import {
 } from './engine';
 
 export * from './engine';
+export * from './expression';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Window snapshot → ScreenSnapshot
