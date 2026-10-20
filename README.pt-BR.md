@@ -164,6 +164,36 @@ Comece por **scaled** e troque só quando o QA visual pedir outra curva. As fór
 diretamente dos kernels Kotlin. `tests/parity.test.ts` compara todas as estratégias × eixos ×
 inversores × flags em 12 tamanhos de janela. Veja a tabela de fórmulas no [README em inglês](README.md#strategies).
 
+## Estratégias personalizadas (`webdimens/custom`)
+
+Defina sua **própria** lei de escala quando nenhuma das 12 embutidas servir. Você também pode compartilhar uma mesma lei entre apps e plataformas: o mesmo JSON funciona em Android, iOS, Flutter, React Native, KMP, Games e .NET.
+
+```ts
+import { defineScalingStrategy, cdp, csp } from 'webdimens/custom';
+
+const brand = defineScalingStrategy({
+  id: 'brand',
+  reference: { width: 360, height: 640 },
+  curve: { type: 'power', exponent: 0.8 },
+  clamp: { min: 0.85, max: 1.6 },
+  rules: [{ when: { device: ['tablet', 'desktop'] }, set: { curve: { type: 'logarithmic', k: 0.4 } } }],
+});
+
+cdp(16, brand);            // px CSS · csp(14, brand) para texto
+brand.css(16);             // "calc(16 * var(--cdp-brand))"
+```
+
+```css
+.card { padding: 8cdp-brand 16cdp-brand; font-size: 14csp-brand; }   /* PostCSS / dimens() */
+```
+
+O módulo também oferece:
+- Presets: `CustomPresets.TV_SAFE`, `TABLET_FRIENDLY`, `WEARABLE`, `GAME_HUD`…
+- `BuiltInStrategies.POWER.extend(…)` e `loadScalingStrategies(json)`.
+- Helpers para React / Vue / Svelte / Angular (`useScalingStrategy`).
+
+Guia: [docs/pt-BR/custom.md](docs/pt-BR/custom.md).
+
 ## Resize, unidades e escopos
 
 - `webdimens/resize`: `autoResizeText(el, { min, max, step, maxLines })`, `fittingTextPx` (canvas, sem reflow), `fittingBoxPx`, limites `resizeFixedDp/Sp`, `resizePercentSw/W/H`, `resizePercentBox`. O elemento precisa ter a caixa restrita: em grid/flex use `min-width: 0`.

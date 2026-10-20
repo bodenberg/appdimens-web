@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **New entry `webdimens/custom`: custom scaling strategies.** Port of the Android module `appdimens-dynamic-custom`.
+  - **Config format:** the same as every AppDimens platform (`custom-strategy.schema.json`). It covers reference frame, axis, curves (linear, power, logarithmic, interpolated, constant, breakpoints, function), factor and value bounds, aspect ratio, font-scale policy, and rules per device class / screen range / orientation / multi-window.
+  - **Composition:** `extends` built-ins and presets.
+  - **APIs:** `cdp` / `csp` / `cdpPx` / `cspPx`, `brand.css(16)`, and the CSS variables `--cdp-<id>` / `--csp-<id>`.
+  - **Literals:** `16cdp-brand` works in `dimens()`, `dimenCss()`, `<style data-webdimens>` and the PostCSS plugin.
+  - **Framework helpers:** React `ScalingStrategyProvider` / `useScalingStrategy`, Vue `provideScalingStrategy` / `useScalingStrategy` / `useCdp`, Svelte `scalingStrategy()`, Angular `provideScalingStrategy` / `injectScalingStrategy`.
+  - **CDN:** included in the global bundle.
+  - **Tests:** a cross-platform parity fixture shared with the Kotlin reference engine.
+
 ## 3.2.1
 
 - **Fix:** bundlers that honour `sideEffects` (Vite / Rolldown, esbuild) could drop the scaled strategy registration when an app

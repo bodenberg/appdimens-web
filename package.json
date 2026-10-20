@@ -153,6 +153,16 @@
         "default": "./dist/density.cjs"
       }
     },
+    "./custom": {
+      "import": {
+        "types": "./dist/custom.d.ts",
+        "default": "./dist/custom.js"
+      },
+      "require": {
+        "types": "./dist/custom.d.cts",
+        "default": "./dist/custom.cjs"
+      }
+    },
     "./resize": {
       "import": {
         "types": "./dist/resize.d.ts",

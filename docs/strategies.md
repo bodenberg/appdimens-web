@@ -166,6 +166,10 @@ factor = devicePixelRatio                    (axis independent)
 The classic Android density scaling (`densityDpi / 160`); on the web it is the device pixel ratio, so values do not depend on
 the window size. Rarely what a web layout wants; provided for parity.
 
+## Custom — `webdimens/custom` · `cdp` / `csp`
+
+When none of the twelve curves fits, define your own: reference frame, axis, curve (`linear`, `power`, `logarithmic`, `interpolated`, `constant`, `breakpoints`, or a function), factor and value bounds, font-scale policy, and rules per device class / screen range / orientation. Use it as `cdp(16, brand)`, `brand.css(16)` or `16cdp-brand`. The same JSON works on every AppDimens platform. See [Custom strategies](./custom.md).
+
 ## Using several strategies
 
 Every strategy definition ships with the core, and a strategy **registers itself on first use** — a JS token

@@ -173,6 +173,42 @@ const radiusFromCircumference: (circumference: number, type?: UnitType) => numbe
 const measureDiameter, displayMeasureDiameter: (value: number, isCircumference: boolean) => number;
 ```
 
+## `webdimens/custom` ([Custom strategies](./custom.md))
+
+```ts
+function defineScalingStrategy(spec: ScalingStrategySpec, options?: { register?: boolean }): ScalingStrategy;
+function loadScalingStrategies(json: string | ScalingStrategiesDocument | ScalingStrategySpec | ScalingStrategySpec[]): Map<string, ScalingStrategy>;
+function exportScalingStrategies(strategies?: ScalingStrategy[]): ScalingStrategiesDocument;
+function getScalingStrategy(id: string): ScalingStrategy | undefined;      // registered, built-in or preset
+function requireScalingStrategy(id: string): ScalingStrategy;
+function registerScalingStrategy(s: ScalingStrategy): ScalingStrategy;
+function unregisterScalingStrategy(id: string): void;
+function registeredScalingStrategies(): readonly ScalingStrategy[];
+function getDefaultScalingStrategy(): ScalingStrategy;                    // BuiltInStrategies.SCALED until set
+function setDefaultScalingStrategy(s: ScalingStrategy | string | null): void;
+const cdp, cdpPx, csp, cspPx: (value: number, strategy?: ScalingStrategy | string) => number;
+const cdpCss, cspCss: (value: number, strategy?: ScalingStrategy | string) => string;   // calc(… var(--cdp-<id>))
+function customCssDeclarations(metrics?: DimenMetrics, strategies?: ScalingStrategy[]): string;
+function installCustomCss(): void;
+function toScreenSnapshot(m: DimenMetrics): ScreenSnapshot;
+function setDeviceClassResolver(fn: ((m: DimenMetrics) => DeviceClass) | null): void;
+function bindScalingStrategy(s: ScalingStrategy, track?: () => void): BoundScalingStrategy;
+const BuiltInStrategies: { SCALED, POWER, LOGARITHMIC, INTERPOLATED, DIAGONAL, PERIMETER, FIXED };
+const CustomPresets: { TABLET_FRIENDLY, COMPACT_FIRST, TV_SAFE, WEARABLE, GAME_HUD, READABLE_TEXT };
+
+class ScalingStrategy {
+  readonly id: string; readonly config: ScalingConfig; readonly valueDependent: boolean;
+  readonly cssVar: string; readonly cssSpVar: string;          // --cdp-<id> / --csp-<id>
+  resolve(metrics?: DimenMetrics): ResolvedScaling; resolveScreen(screen: ScreenSnapshot): ResolvedScaling;
+  factor(m?): number; dp(v, m?): number; px(v, m?): number; sp(v, m?): number; spPx(v, m?): number;
+  css(v): string; cssSp(v): string; explain(m?): string;
+  extend(id: string, patch?: ScalingPatchSpec, options?: { register?: boolean }): ScalingStrategy;
+  withAxis(axis: ScalingAxis): ScalingStrategy; toJSON(): ScalingStrategySpec;
+}
+// Pure engine (no DOM): resolveScaling, parseStrategiesDocument, configFromSpec, configToSpec, screenSnapshot,
+// BUILT_IN_SPECS, PRESET_SPECS and the spec / config types.
+```
+
 ## `webdimens/postcss` ([CSS](./css.md#postcss-plugin))
 
 ```ts
@@ -202,6 +238,11 @@ function dimen<T>(compute: () => T): Readable<T>;
 function provideWebDimens(config?: InstallOptions): EnvironmentProviders;
 function injectDimens(): Signal<DimenMetrics>;
 function injectDimen<T>(compute: () => T): Signal<T>;
+// custom strategies (webdimens/custom)
+// react:   ScalingStrategyProvider({ strategy, children }); useScalingStrategy(strategy?): BoundScalingStrategy
+// vue:     provideScalingStrategy(strategy); useScalingStrategy(strategy?): BoundScalingStrategy; useCdp(value, strategy?): ComputedRef<number>
+// svelte:  scalingStrategy(strategy?): Readable<BoundScalingStrategy>
+// angular: SCALING_STRATEGY; provideScalingStrategy(strategy): EnvironmentProviders; injectScalingStrategy(strategy?): Signal<BoundScalingStrategy>
 ```
 
 ## Assets

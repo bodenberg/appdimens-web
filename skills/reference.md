@@ -101,6 +101,20 @@ React `useDimens()` `useDimensVersion()` `useDimen(fn, deps?)` `useWebDimens(opt
 Vue `WebDimens` plugin, `useDimens()`, `useDimen(fn)` · Svelte stores `metrics`, `dimen(fn)` ·
 Angular `provideWebDimens(opts?)`, `injectDimens()`, `injectDimen(fn)`.
 
+## Custom strategies (`webdimens/custom`)
+
+- **Define:** `defineScalingStrategy({ id, reference?, axis?, curve?, multiplier?, clamp?, valueClamp?, aspectRatio?, fontScale?, ignoreMultiWindow?, transform?, rules?, extends? })`. It registers the strategy.
+- **JSON:** `loadScalingStrategies(json)` registers every strategy and applies `default`. Export with `exportScalingStrategies()`.
+- **Axis:** `smallestWidth` · `width` · `height` · `min` · `max` · `diagonal` · `perimeter`.
+- **Curves:** `linear` · `power(exponent)` · `logarithmic(k)` · `interpolated(t)` · `constant(factor)` · `breakpoints(points[{at, factor}])` · `custom(fn)`.
+- **Rules:** `{ name?, when: { device?, orientation?, smallestWidth?, width?, height?, aspectRatio?: {min?, max?}, multiWindow? }, set: { …fields } }`. Ranges are `min <= v < max`. Matching rules apply in order, and a later rule wins.
+- **Use:**
+  - `cdp(v, s?)` / `cdpPx` / `csp` / `cspPx` (default strategy = `BuiltInStrategies.SCALED` until `setDefaultScalingStrategy`).
+  - `s.dp(v)`, `s.sp(v)`, `s.css(v)`, `s.cssSp(v)`, `s.explain()`, `s.extend(id, patch)`, `s.withAxis(axis)`, `s.toJSON()`.
+- **CSS:** `--cdp-<id>` / `--csp-<id>` (+ `--cdp` / `--csp` for the default). Literals: `16cdp-<id>`, `14csp-<id>`, `16cdp`.
+- **Device class:** the UI mode, then a fine pointer → desktop, then `sw >= 600` → tablet. Override with `setDeviceClassResolver`.
+- **Formula:** `factor = clamp(curve(axis/ref) × multiplier × (1 + k·ln(AR/1.78))^ar, min, max)`, `dp = transform(clampValue(v × factor))`.
+
 ## Formulas (d = axis dp; L = ln(max/min / 1.78); k = 0.08/30)
 
 scaled/percent `d/300`, `a`: `1 + (d−300)(1/300 + k·L)` · power `(d/300)^0.75` · fluid `0.8→1.2` over 320–768 ·
