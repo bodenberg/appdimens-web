@@ -103,8 +103,8 @@ Angular `provideWebDimens(opts?)`, `injectDimens()`, `injectDimen(fn)`.
 
 ## Custom strategies (`webdimens/custom`)
 
-- **Simplest:** `scalingFormula(text | (base, screen) => dp, { id?, register? })` — the formula is the value. `cdp(16, 'base * …')` / `useScalingStrategy('base * …')`: a string that is not a strategy id is a formula (shared per text, `getFormulaScalingStrategy(text)`). `base * (E)` with `E` free of `base`/`scaled`/`factor` is screen-only (one multiply, CSS var `--cdp-formula-<hash>`).
-- **Programmable factor:** `customScaleStrategy((screen) => factor, { id?, register? })` — code curve, screen-only (once per window), auto id `scale#<n>`, non-finite factor throws on resolve; not JSON.
+- **Simplest:** `scalingFormula((scope: FormulaScope) => dp | text, { id?, register? })` — the result is the value; the scope has the text-language names (`base sw width height shortSide longSide diagonal perimeter aspectRatio ratio density fontScale device screen`, booleans `phone tablet desktop tv watch car vr landscape portrait multiWindow`, `pow sqrt ln log10 exp abs round min max clamp lerp smoothstep`), destructuring friendly. `cdp(16, 'base * …')` / `useScalingStrategy('base * …')`: a string that is not a strategy id is a formula (shared per text, `getFormulaScalingStrategy(text)`). `base * (E)` with `E` free of `base`/`scaled`/`factor` is screen-only (one multiply, CSS var `--cdp-formula-<hash>`).
+- **Programmable factor:** `customScaleStrategy((scope: ScreenScope) => factor, { id?, register? })` (e.g. `({ tv, height, ratio }) => (tv ? height / 540 : ratio)`) — code curve, screen-only (once per window), auto id `scale#<n>`, non-finite factor throws on resolve; not JSON.
 - **Define:** `defineScalingStrategy({ id, reference?, axis?, curve?, multiplier?, clamp?, valueClamp?, aspectRatio?, fontScale?, ignoreMultiWindow?, transform?, rules?, extends? })`. It registers the strategy.
 - **JSON:** `loadScalingStrategies(json)` registers every strategy and applies `default`. Export with `exportScalingStrategies()`.
 - **Axis:** `smallestWidth` · `width` · `height` · `min` · `max` · `diagonal` · `perimeter`.

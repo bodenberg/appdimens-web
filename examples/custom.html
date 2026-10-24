@@ -36,8 +36,9 @@
     });
     // Simplest forms: the formula is the value, or a factor computed in code.
     const formula = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
-    const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8), { id: 'product' });
-    const strategies = [brand, CustomPresets.TABLET_FRIENDLY, CustomPresets.GAME_HUD, formula, product];
+    const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8), { id: 'product' });
+    const code = scalingFormula(({ base, tablet, sw, pow }) => (tablet ? base * 1.2 : base * pow(sw / 360, 0.8)), { id: 'code' });
+    const strategies = [brand, CustomPresets.TABLET_FRIENDLY, CustomPresets.GAME_HUD, formula, product, code];
     const render = () => {
       document.getElementById('boxes').innerHTML = strategies
         .map((s) => `<div><div class="box" style="width:${s.dp(48)}px;height:${s.dp(48)}px"></div><small>${s.id}</small></div>`)

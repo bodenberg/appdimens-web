@@ -5,6 +5,7 @@ import {
   cdpCss,
   csp,
   customScaleStrategy,
+  formulaScope,
   customCssDeclarations,
   defineScalingStrategy,
   getFormulaScalingStrategy,
@@ -14,6 +15,7 @@ import {
   resetScalingStrategiesForTest,
   ScalingExpression,
   scalingFormula,
+  screenScope,
   screenSnapshot,
   setDefaultScalingStrategy,
 } from '../src/custom';
@@ -79,14 +81,14 @@ describe('scalingFormula — the formula is the value', () => {
   });
 
   it('code formulas have no limits', () => {
-    const s = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8) + (screen.isLandscape ? 2 : 0));
+    const s = scalingFormula(({ base, sw, pow, landscape }) => base * pow(sw / 360, 0.8) + (landscape ? 2 : 0));
     expect(s.resolveScreen(phone).scale(16)).toBeCloseTo(16 * Math.pow(411 / 360, 0.8), 12);
     expect(s.resolveScreen(tablet).scale(16)).toBeCloseTo(16 * Math.pow(800 / 360, 0.8) + 2, 12);
     expect(s.valueDependent).toBe(true);
     expect(s.id.startsWith('formula#')).toBe(true);
-    expect(scalingFormula((b) => b).id).not.toBe(s.id);
+    expect(scalingFormula(({ base }) => base).id).not.toBe(s.id);
     expect(() => s.toJSON()).toThrow('cannot be encoded');
-    const named = scalingFormula((base) => base * 3, { id: 'hud' });
+    const named = scalingFormula(({ base }) => base * 3, { id: 'hud' });
     expect(getScalingStrategy('hud')).toBe(named);
     expect(s.resolveScreen(phone).explain(s.id)).toContain(' then transform');
   });
@@ -137,7 +139,7 @@ describe('inline formulas on the web runtime', () => {
 
 describe('customScaleStrategy — programmable factor', () => {
   it('is screen-only and multiplies every value', () => {
-    const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8));
+    const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8));
     expect(product.valueDependent).toBe(false);
     expect(product.resolveScreen(phone).factor).toBe(411 / 360);
     expect(product.resolveScreen(tablet).factor).toBe(1.8); // 1280 / 360 clamped
@@ -150,5 +152,42 @@ describe('customScaleStrategy — programmable factor', () => {
     expect(named.resolveScreen(phone).scale(16)).toBe(20);
     expect(named.css(16)).toBe('calc(16 * var(--cdp-product))');
     expect(() => customScaleStrategy(() => NaN).resolveScreen(phone)).toThrow('non-finite');
+  });
+});
+
+describe('code scope matches the text language', () => {
+  it('same names, same numbers', () => {
+    const pairs: [Parameters<typeof scalingFormula>[0], string][] = [
+      [({ base, sw, pow }) => base * pow(sw / 360, 0.8), 'base * pow(sw / 360, 0.8)'],
+      [({ base, ratio }) => base * ratio, 'base * ratio'],
+      [({ base, tablet, clamp, width }) => base * (tablet ? 0.9 : 1) * clamp(width / 360, 0.85, 1.6), 'base * (tablet ? 0.9 : 1) * clamp(width / 360, 0.85, 1.6)'],
+      [({ base, round, lerp, aspectRatio }) => round(base * lerp(1, aspectRatio, 0.1)), 'round(base * lerp(1, aspectRatio, 0.1))'],
+      [(s) => s.base * s.smoothstep(300, 900, s.diagonal) + s.ln(s.perimeter) - s.sqrt(s.shortSide) + s.max(s.longSide, s.height) * s.min(1, s.fontScale, s.density),
+        'base * smoothstep(300, 900, diagonal) + ln(perimeter) - sqrt(shortSide) + max(longSide, height) * min(1, fontScale, density)'],
+      [({ base, landscape, portrait, phone, exp, abs, log10 }) => base * (landscape ? 2 : 1) + (portrait && phone ? exp(1) : abs(-3)) + log10(base), 'base * (landscape ? 2 : 1) + (portrait && phone ? exp(1) : abs(-3)) + log10(base)'],
+    ];
+    for (const [code, text] of pairs) {
+      for (const screen of [phone, tablet]) {
+        for (const base of [1, 16, 48]) {
+          expect(scalingFormula(code).resolveScreen(screen).scale(base), text).toBeCloseTo(scalingFormula(text).resolveScreen(screen).scale(base), 4);
+        }
+      }
+    }
+    const tv = screenSnapshot({ widthDp: 960, heightDp: 540, device: 'tv' });
+    const factor = customScaleStrategy(({ tv, height, ratio }) => (tv ? height / 540 : ratio));
+    expect(factor.resolveScreen(tv).factor).toBe(1);
+    expect(factor.resolveScreen(phone).factor).toBeCloseTo(411 / 300, 12);
+    // Every scope member is a plain property, so a whole destructuring works.
+    expect(Object.keys(screenScope(phone))).toContain('smoothstep');
+    expect(formulaScope(phone, 16).base).toBe(16);
+  });
+});
+
+describe('factor strategies in CSS', () => {
+  it('an unregistered factor strategy publishes its variable on first css()', () => {
+    setMetrics({ screenWidthDp: 411, screenHeightDp: 891 });
+    const p = customScaleStrategy(({ width }) => width / 360);
+    expect(p.css(16)).toBe(`calc(16 * var(${p.cssVar}))`);
+    expect(document.getElementById('webdimens-custom-vars')?.textContent).toContain(`${p.cssVar}:${Math.round((411 / 360) * 1e4) / 1e4}px`);
   });
 });

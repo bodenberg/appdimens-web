@@ -12,11 +12,11 @@
  *   csp(14, brand)        // text, font-scale policy applied
  *   brand.css(16)         // "calc(16 * var(--cdp-brand))" — responsive, SSR-safe
  *
- * Simplest form — just write the formula (`base` is the value you pass):
+ * Simplest form — one typed line (the editor autocompletes `base`, `sw`, `tablet`, `pow`, `clamp`…):
  *
- *   cdp(16, 'base * pow(sw / 360, 0.8)')
- *   const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
- *   const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+ *   const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8)); // factor
+ *   const hud = scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8));           // final value
+ *   cdp(16, 'base * pow(sw / 360, 0.8)')   // the same as text, for JSON / remote config
  *
  * Every defined strategy publishes `--cdp-<id>` (layout factor, px) and `--csp-<id>`
  * (text factor × effective font scale, px); the default strategy also publishes `--cdp` / `--csp`.
@@ -38,8 +38,10 @@ import {
   type DeviceClass,
   type ScalingAxis,
   type ScalingConfig,
-  type ScalingFormula,
-  type ScreenFactor,
+  formulaScope,
+  type FormulaScope,
+  screenScope,
+  type ScreenScope,
   type ScalingPatchSpec,
   type ScalingRuleSpec,
   type ScalingStrategiesDocument,
@@ -371,7 +373,7 @@ export function resetScalingStrategiesForTest(): void {
 /** Bound for distinct shared formula texts; past it, strategies are built per call (still correct). */
 const MAX_SHARED_FORMULAS = 256;
 const formulaStrategies = new Map<string, ScalingStrategy>();
-/** Shared (unregistered) formula strategies whose CSS variables are in use (`css()`). */
+/** Unregistered formula / factor strategies whose CSS variables are in use (`css()`). */
 const publishedFormulas = new Set<ScalingStrategy>();
 let formulaIds = 0;
 
@@ -400,19 +402,27 @@ export interface ScalingFormulaOptions {
 }
 
 /**
- * One-liner strategy — the formula **is** the final value (`base` = the value you pass):
+ * One-liner strategy — the result **is** the final value (`base` = the value you pass).
  *
- *   const hud = scalingFormula('base * pow(sw / 360, 0.8)');  // or straight: cdp(16, 'base * …')
- *   const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+ * In code (typed, autocompleted; the scope has the same names as the text language):
+ *
+ *   const hud = scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8));
+ *   const card = scalingFormula(({ base, tablet, ratio }) => (tablet ? base * 1.2 : base * ratio));
+ *
+ * Must be pure (evaluated per value). Without an `id` a unique `"formula#<n>"` id is generated.
+ * Not JSON-serializable.
+ *
+ * As text, for JSON / remote config (`cdp(16, '…')` does the same inline):
+ *
+ *   const remote = scalingFormula('base * pow(sw / 360, 0.8)');
  *
  * Text variables: `base`, `sw`, `width`, `height`, `shortSide`, `longSide`, `diagonal`,
  * `aspectRatio`, `density`, `fontScale`, device flags (`tablet`, `tv`, `landscape`, …) and `ratio`
- * (`sw / 300`, the ratio `sdp` uses). Same language and numbers on every AppDimens platform.
- * Writing it as `base * (…)` keeps the one-multiply fast path (and `css()` stays a CSS variable);
- * any other shape works too, evaluated per value. Code formulas have no limits but are not
- * JSON-serializable.
+ * (`sw / 300`, the ratio `sdp` uses). Same numbers on every AppDimens platform. Text shaped
+ * `base * (…)` keeps the one-multiply fast path (and `css()` stays a CSS variable); any other
+ * shape works too, evaluated per value. Without an `id`, a text formula is shared per text.
  */
-export function scalingFormula(formula: string | ScalingFormula, options: ScalingFormulaOptions = {}): ScalingStrategy {
+export function scalingFormula(formula: string | ((scope: FormulaScope) => number), options: ScalingFormulaOptions = {}): ScalingStrategy {
   const register = options.register ?? options.id !== undefined;
   let s: ScalingStrategy;
   if (typeof formula === 'string') {
@@ -423,7 +433,7 @@ export function scalingFormula(formula: string | ScalingFormula, options: Scalin
     const fn = formula;
     s = new ScalingStrategy(
       options.id ?? `formula#${++formulaIds}`,
-      Object.freeze({ ...DEFAULT_CONFIG, transform: (base: number, _scaled: number, screen: ScreenSnapshot) => fn(base, screen) }),
+      Object.freeze({ ...DEFAULT_CONFIG, transform: (base: number, _scaled: number, screen: ScreenSnapshot) => fn(formulaScope(screen, base)) }),
     );
   }
   return register ? registerScalingStrategy(s) : s;
@@ -432,10 +442,11 @@ export function scalingFormula(formula: string | ScalingFormula, options: Scalin
 let scaleIds = 0;
 
 /**
- * Strategy from a programmable factor — the most flexible form, written in code. You get the
- * window and return the **factor** that multiplies every value:
+ * Strategy from a programmable **factor** — you return the number that multiplies every value.
+ * Typed and autocompleted (same names as the text language), plus any code of yours:
  *
- *   const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8));
+ *   const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8));
+ *   const living = customScaleStrategy(({ tv, height, ratio }) => (tv ? height / 540 : ratio));
  *   cdp(16, product);   // 16 × factor
  *
  * The factor depends only on the window, so it runs once per window and every value costs one
@@ -443,17 +454,18 @@ let scaleIds = 0;
  * Without an `id` a unique `"scale#<n>"` id is generated; an `id` registers by default. Not
  * JSON-serializable: for JSON use a text curve (`curve: { type: 'expression', expression: 'clamp(width / 360, 0.85, 1.8)' }`).
  */
-export function customScaleStrategy(factor: ScreenFactor, options: ScalingFormulaOptions = {}): ScalingStrategy {
+export function customScaleStrategy(factor: (scope: ScreenScope) => number, options: ScalingFormulaOptions = {}): ScalingStrategy {
   if (typeof factor !== 'function') throw new TypeError('factor must be a function');
   const s = new ScalingStrategy(
     options.id ?? `scale#${++scaleIds}`,
-    Object.freeze({ ...DEFAULT_CONFIG, curve: Object.freeze({ type: 'custom' as const, fn: (_ratio: number, screen: ScreenSnapshot) => factor(screen) }) }),
+    Object.freeze({ ...DEFAULT_CONFIG, curve: Object.freeze({ type: 'custom' as const, fn: (_ratio: number, screen: ScreenSnapshot) => factor(screenScope(screen)) }) }),
   );
   return (options.register ?? options.id !== undefined) ? registerScalingStrategy(s) : s;
 }
 
 function publishFormula(s: ScalingStrategy): void {
-  if (!s.id.startsWith(FORMULA_ID_PREFIX) || registry.get(s.id) === s || publishedFormulas.has(s)) return;
+  // Shared text formulas and auto-id factor strategies are not registered: publish their variables on first use.
+  if (!(s.id.startsWith(FORMULA_ID_PREFIX) || s.id.startsWith('scale#')) || registry.get(s.id) === s || publishedFormulas.has(s)) return;
   publishedFormulas.add(s);
   if (cssStarted) writeCustomCss();
 }

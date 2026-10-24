@@ -73,10 +73,126 @@ export function screenSnapshot(init: {
 export type CurveFunction = (ratio: number, screen: ScreenSnapshot) => number;
 /** Pure per-value hook `(base, scaled, screen) → dp`, applied after the value bounds. */
 export type ValueTransform = (base: number, scaled: number, screen: ScreenSnapshot) => number;
-/** The simplest custom strategy, in code: `(base, screen) → dp`. Must be pure (cached per window). */
-export type ScalingFormula = (base: number, screen: ScreenSnapshot) => number;
-/** Programmable factor in code: `(screen) → factor` that multiplies every value. Must be pure (runs once per window). */
-export type ScreenFactor = (screen: ScreenSnapshot) => number;
+
+/**
+ * What a code formula can read, with the **same names as the text formulas**, so the editor
+ * autocompletes them and typos are type errors. Values are dp (CSS px on the web); flags are
+ * booleans. Every member is a plain property, so destructuring works:
+ * `({ base, sw, pow }) => base * pow(sw / 360, 0.8)`.
+ */
+export interface ScreenScope {
+  /** The full window snapshot. */
+  readonly screen: ScreenSnapshot;
+  /** Smallest width. */
+  readonly sw: number;
+  readonly width: number;
+  readonly height: number;
+  readonly shortSide: number;
+  readonly longSide: number;
+  /** `sqrt(shortSide² + longSide²)`. */
+  readonly diagonal: number;
+  /** `shortSide + longSide`. */
+  readonly perimeter: number;
+  /** `longSide / shortSide`. */
+  readonly aspectRatio: number;
+  readonly density: number;
+  readonly fontScale: number;
+  /** `sw / 300` — the ratio `sdp` uses (`base * ratio` = `sdp`). */
+  readonly ratio: number;
+  readonly device: DeviceClass;
+  readonly landscape: boolean;
+  readonly portrait: boolean;
+  readonly multiWindow: boolean;
+  readonly phone: boolean;
+  readonly tablet: boolean;
+  readonly desktop: boolean;
+  readonly tv: boolean;
+  readonly watch: boolean;
+  readonly car: boolean;
+  readonly vr: boolean;
+  readonly pow: (x: number, exponent: number) => number;
+  readonly sqrt: (x: number) => number;
+  /** Natural logarithm. */
+  readonly ln: (x: number) => number;
+  readonly log10: (x: number) => number;
+  readonly exp: (x: number) => number;
+  readonly abs: (x: number) => number;
+  /** Half up: `floor(x + 0.5)`, like the text language. */
+  readonly round: (x: number) => number;
+  readonly min: (...values: number[]) => number;
+  readonly max: (...values: number[]) => number;
+  readonly clamp: (x: number, min: number, max: number) => number;
+  readonly lerp: (a: number, b: number, t: number) => number;
+  readonly smoothstep: (edge0: number, edge1: number, x: number) => number;
+}
+
+/** {@link ScreenScope} plus `base`, the value being scaled (the `16` in `cdp(16, hud)`). */
+export interface FormulaScope extends ScreenScope {
+  readonly base: number;
+}
+
+const SCOPE_MATH = Object.freeze({
+  pow: Math.pow,
+  sqrt: Math.sqrt,
+  ln: Math.log,
+  log10: Math.log10,
+  exp: Math.exp,
+  abs: Math.abs,
+  round: (x: number): number => Math.floor(x + 0.5),
+  min: Math.min,
+  max: Math.max,
+  clamp: (x: number, min: number, max: number): number => Math.max(min, Math.min(max, x)),
+  lerp: (a: number, b: number, t: number): number => a + (b - a) * t,
+  smoothstep: (edge0: number, edge1: number, x: number): number => {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+    return t * t * (3 - 2 * t);
+  },
+});
+
+const scopes = new WeakMap<ScreenSnapshot, ScreenScope>();
+
+/** The (memoized, frozen) scope code formulas read for `screen`. */
+export function screenScope(screen: ScreenSnapshot): ScreenScope {
+  let s = scopes.get(screen);
+  if (!s) {
+    const short = Math.min(screen.widthDp, screen.heightDp);
+    const long = Math.max(screen.widthDp, screen.heightDp);
+    const d = screen.device;
+    s = Object.freeze({
+      screen,
+      sw: screen.smallestWidthDp,
+      width: screen.widthDp,
+      height: screen.heightDp,
+      shortSide: short,
+      longSide: long,
+      diagonal: Math.sqrt(short * short + long * long),
+      perimeter: short + long,
+      aspectRatio: short > 0 ? long / short : 1,
+      density: screen.density,
+      fontScale: screen.fontScale,
+      ratio: screen.smallestWidthDp / 300, // default reference smallest side, as in `sdp`
+      device: d,
+      landscape: screen.isLandscape,
+      portrait: !screen.isLandscape,
+      multiWindow: screen.isMultiWindow,
+      phone: d === 'phone',
+      tablet: d === 'tablet',
+      desktop: d === 'desktop',
+      tv: d === 'tv',
+      watch: d === 'watch',
+      car: d === 'car',
+      vr: d === 'vr',
+      ...SCOPE_MATH,
+    });
+    scopes.set(screen, s);
+  }
+  return s;
+}
+
+/** {@link screenScope} plus `base` (the screen part is shared per window, only `base` is new). */
+export function formulaScope(screen: ScreenSnapshot, base: number): FormulaScope {
+  return Object.create(screenScope(screen), { base: { value: base, enumerable: true } }) as FormulaScope;
+}
 
 export type CurveSpec =
   | 'linear' | 'power' | 'logarithmic' | 'interpolated' | 'constant'

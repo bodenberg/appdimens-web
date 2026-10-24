@@ -226,16 +226,16 @@ are published from then on. For hand-written `var(--fsdp)` or PostCSS output, li
 
 Define your **own** scaling law when none of the 12 built-ins fits. You can also share one law across apps and platforms: the same JSON works on Android, iOS, Flutter, React Native, KMP, Games and .NET.
 
-The simplest way is to write the formula. `base` is the value you pass, and the result is the scaled value:
+The simplest way is to write the math as ordinary TypeScript on one line. The editor autocompletes `base`, `sw`, `width`, `tablet`, `pow`, `clamp`…, and typos are type errors:
 
 ```ts
-import { cdp, customScaleStrategy, scalingFormula } from 'webdimens/custom';
+import { cdp, csp, customScaleStrategy, scalingFormula } from 'webdimens/custom';
 
-cdp(16, 'base * pow(sw / 360, 0.8)');                                       // inline
-const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
-hud.sp(18);                                                                 // text
-const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
-const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8)); // programmable factor // plain JS
+const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8)); // factor × every value
+const hud = scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8));           // final value (base = 16 in cdp(16, hud))
+cdp(16, product);
+csp(18, hud);
+cdp(16, 'base * pow(sw / 360, 0.8)');   // same thing as text, for JSON / remote config
 ```
 
 For rules per device, factor bounds or a font-scale policy, use the full configuration:
