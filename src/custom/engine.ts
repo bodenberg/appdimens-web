@@ -492,8 +492,13 @@ export class ResolvedScaling {
     readonly referenceDp: number,
     readonly curveFactor: number,
     readonly aspectRatioMultiplier: number,
+    /**
+     * True when `ignoreMultiWindow` applies to this multi-window screen: the value stays unscaled
+     * (only value bounds apply); formulas and transforms are skipped.
+     */
+    readonly multiWindowIgnored = false,
   ) {
-    const e = config.formula?.baseCoefficient;
+    const e = multiWindowIgnored ? undefined : config.formula?.baseCoefficient;
     this.proportional = !!e;
     this.formulaCoefficient = e
       ? e.evaluate(expressionVariables(screen, referenceDp > 0 ? axisDp / referenceDp : 1, axisDp, referenceDp, config.reference))
@@ -521,6 +526,7 @@ export class ResolvedScaling {
       if (max !== undefined && magnitude > max) magnitude = max;
       out = out < 0 ? -magnitude : magnitude;
     }
+    if (this.multiWindowIgnored) return out;
     if (this.config.formula) {
       const ratio = this.referenceDp > 0 ? this.axisDp / this.referenceDp : 1;
       out = this.config.formula.evaluate(
@@ -559,7 +565,8 @@ export class ResolvedScaling {
       out += ` clamp[${c.minFactor !== undefined ? fmt(c.minFactor) : '-'}, ${c.maxFactor !== undefined ? fmt(c.maxFactor) : '-'}]`;
     }
     out += ` => factor ${fmt(this.factor)}`;
-    if (c.formula) out += ` then Formula(${c.formula.source})`;
+    if (this.multiWindowIgnored) out += ' (multi-window ignored)';
+    else if (c.formula) out += ` then Formula(${c.formula.source})`;
     else if (c.transform) out += ' then transform';
     if (this.appliedRules.length) out += ` rules=[${this.appliedRules.join(', ')}]`;
     return out;
@@ -596,7 +603,7 @@ export function resolveScaling(base: ScalingConfig, screen: ScreenSnapshot): Res
   const axisDp = readAxis(screen, cfg.axis);
   const refDp = readReference(cfg.reference, cfg.axis);
   if (cfg.ignoreMultiWindow && screen.isMultiWindow) {
-    return new ResolvedScaling(screen, cfg, 1, applied, axisDp, refDp, 1, 1);
+    return new ResolvedScaling(screen, cfg, 1, applied, axisDp, refDp, 1, 1, true);
   }
   const ratio = refDp > 0 ? axisDp / refDp : 1;
   const curveFactor = evaluateCurve(cfg.curve, ratio, axisDp, screen, refDp, cfg.reference);
@@ -734,7 +741,8 @@ export function readPatch(o: ScalingPatchSpec, path: string): ScalingPatch {
 }
 
 function readRange(r: RangeSpec | undefined, path: string): [number | undefined, number | undefined] {
-  if (!r) return [undefined, undefined];
+  if (r === undefined || r === null) return [undefined, undefined];
+  if (typeof r !== 'object' || Array.isArray(r)) throw new TypeError(`${path} must be an object with min/max`);
   return [num(r.min, `${path}.min`), num(r.max, `${path}.max`)];
 }
 

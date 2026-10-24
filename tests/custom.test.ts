@@ -149,6 +149,19 @@ describe('custom JSON', () => {
     expect(() => parseStrategiesDocument({ version: 2, strategies: [] }, none)).toThrow(/version/);
     expect(() => requireScalingStrategy('missing')).toThrow(/No scaling strategy/);
   });
+
+  it('rejects a range condition that is not an object', () => {
+    const none = (): undefined => undefined;
+    const json = '{"strategies":[{"id":"x","rules":[{"when":{"width":600},"set":{"multiplier":2}}]}]}';
+    expect(() => parseStrategiesDocument(json, none)).toThrow(/rules\[0\]\.when\.width must be an object with min\/max/);
+  });
+
+  it('ignoreMultiWindow skips the formula in multi-window', () => {
+    const s = defineScalingStrategy({ id: 'mw', ignoreMultiWindow: true, formula: 'base * 3' });
+    const mw = screenSnapshot({ widthDp: 411, heightDp: 891, isMultiWindow: true });
+    expect(s.resolveScreen(mw).scale(16)).toBe(16);
+    expect(s.resolveScreen(phone).scale(16)).toBe(48);
+  });
 });
 
 describe('cross-platform fixture', () => {
