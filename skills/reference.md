@@ -103,6 +103,8 @@ Angular `provideWebDimens(opts?)`, `injectDimens()`, `injectDimen(fn)`.
 
 ## Custom strategies (`webdimens/custom`)
 
+- **Simplest:** `scalingFormula(text | (base, screen) => dp, { id?, register? })` — the formula is the value. `cdp(16, 'base * …')` / `useScalingStrategy('base * …')`: a string that is not a strategy id is a formula (shared per text, `getFormulaScalingStrategy(text)`). `base * (E)` with `E` free of `base`/`scaled`/`factor` is screen-only (one multiply, CSS var `--cdp-formula-<hash>`).
+- **Programmable factor:** `customScaleStrategy((screen) => factor, { id?, register? })` — code curve, screen-only (once per window), auto id `scale#<n>`, non-finite factor throws on resolve; not JSON.
 - **Define:** `defineScalingStrategy({ id, reference?, axis?, curve?, multiplier?, clamp?, valueClamp?, aspectRatio?, fontScale?, ignoreMultiWindow?, transform?, rules?, extends? })`. It registers the strategy.
 - **JSON:** `loadScalingStrategies(json)` registers every strategy and applies `default`. Export with `exportScalingStrategies()`.
 - **Axis:** `smallestWidth` · `width` · `height` · `min` · `max` · `diagonal` · `perimeter`.

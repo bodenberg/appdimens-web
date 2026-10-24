@@ -24,7 +24,7 @@
     </section>
   </main>
   <script>
-    const { defineScalingStrategy, CustomPresets, subscribe } = WebDimens;
+    const { defineScalingStrategy, scalingFormula, customScaleStrategy, CustomPresets, subscribe } = WebDimens;
     // Same JSON shape as every AppDimens platform (custom-strategy.schema.json).
     const brand = defineScalingStrategy({
       id: 'brand',
@@ -34,7 +34,10 @@
       fontScale: { max: 1.3 },
       rules: [{ name: 'large', when: { device: ['tablet', 'desktop'] }, set: { curve: { type: 'logarithmic', k: 0.4 } } }],
     });
-    const strategies = [brand, CustomPresets.TABLET_FRIENDLY, CustomPresets.GAME_HUD];
+    // Simplest forms: the formula is the value, or a factor computed in code.
+    const formula = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+    const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8), { id: 'product' });
+    const strategies = [brand, CustomPresets.TABLET_FRIENDLY, CustomPresets.GAME_HUD, formula, product];
     const render = () => {
       document.getElementById('boxes').innerHTML = strategies
         .map((s) => `<div><div class="box" style="width:${s.dp(48)}px;height:${s.dp(48)}px"></div><small>${s.id}</small></div>`)

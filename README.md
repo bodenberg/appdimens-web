@@ -226,6 +226,20 @@ are published from then on. For hand-written `var(--fsdp)` or PostCSS output, li
 
 Define your **own** scaling law when none of the 12 built-ins fits. You can also share one law across apps and platforms: the same JSON works on Android, iOS, Flutter, React Native, KMP, Games and .NET.
 
+The simplest way is to write the formula. `base` is the value you pass, and the result is the scaled value:
+
+```ts
+import { cdp, customScaleStrategy, scalingFormula } from 'webdimens/custom';
+
+cdp(16, 'base * pow(sw / 360, 0.8)');                                       // inline
+const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+hud.sp(18);                                                                 // text
+const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8)); // programmable factor // plain JS
+```
+
+For rules per device, factor bounds or a font-scale policy, use the full configuration:
+
 ```ts
 import { defineScalingStrategy, cdp, csp } from 'webdimens/custom';
 

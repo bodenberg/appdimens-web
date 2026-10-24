@@ -12,6 +12,12 @@
  *   csp(14, brand)        // text, font-scale policy applied
  *   brand.css(16)         // "calc(16 * var(--cdp-brand))" — responsive, SSR-safe
  *
+ * Simplest form — just write the formula (`base` is the value you pass):
+ *
+ *   cdp(16, 'base * pow(sw / 360, 0.8)')
+ *   const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+ *   const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+ *
  * Every defined strategy publishes `--cdp-<id>` (layout factor, px) and `--csp-<id>`
  * (text factor × effective font scale, px); the default strategy also publishes `--cdp` / `--csp`.
  */
@@ -32,6 +38,8 @@ import {
   type DeviceClass,
   type ScalingAxis,
   type ScalingConfig,
+  type ScalingFormula,
+  type ScreenFactor,
   type ScalingPatchSpec,
   type ScalingRuleSpec,
   type ScalingStrategiesDocument,
@@ -39,6 +47,7 @@ import {
   type ScreenSnapshot,
   TABLET_MIN_SMALLEST_WIDTH_DP,
 } from './engine';
+import { FORMULA_VARIABLES, ScalingExpression } from './expression';
 
 export * from './engine';
 export * from './expression';
@@ -99,7 +108,16 @@ function current(): DimenMetrics {
   return S.metrics;
 }
 
-const cssIdent = (id: string): string => id.replace(/[^A-Za-z0-9_-]/g, '_');
+const FORMULA_ID_PREFIX = 'formula:';
+const cssIdent = (id: string): string =>
+  id.startsWith(FORMULA_ID_PREFIX) ? `formula-${hash(id.slice(FORMULA_ID_PREFIX.length))}` : id.replace(/[^A-Za-z0-9_-]/g, '_');
+
+/** FNV-1a (32-bit, hex) — distinct CSS names for formula texts. */
+function hash(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Strategy
@@ -174,6 +192,7 @@ export class ScalingStrategy {
    */
   css(value: number): string {
     if (this.valueDependent) return `${round(this.dp(value))}px`;
+    publishFormula(this);
     ensureCss();
     return `calc(${value} * var(${this.cssVar}))`;
   }
@@ -181,6 +200,7 @@ export class ScalingStrategy {
   /** Responsive CSS for text (`var(--csp-<id>)`). */
   cssSp(value: number): string {
     if (this.valueDependent) return `${round(this.sp(value))}px`;
+    publishFormula(this);
     ensureCss();
     return `calc(${value} * var(${this.cssSpVar}))`;
   }
@@ -300,8 +320,9 @@ export function getDefaultScalingStrategy(): ScalingStrategy {
   return defaultStrategy ?? BuiltInStrategies.SCALED;
 }
 
+/** `strategy`: an instance, a registered / built-in / preset id, or a text formula (`'base * …'`). */
 export function setDefaultScalingStrategy(strategy: ScalingStrategy | string | null): void {
-  defaultStrategy = typeof strategy === 'string' ? requireScalingStrategy(strategy) : strategy;
+  defaultStrategy = typeof strategy === 'string' ? strategyFromString(strategy) : strategy;
   installResolver();
   if (cssStarted) writeCustomCss();
   else ensureCss();
@@ -334,15 +355,130 @@ export function exportScalingStrategies(strategies: readonly ScalingStrategy[] =
 export function resetScalingStrategiesForTest(): void {
   registry.clear();
   derived.clear();
+  formulaStrategies.clear();
+  publishedFormulas.clear();
+  formulaIds = 0;
+  scaleIds = 0;
   defaultStrategy = null;
   deviceResolver = null;
   stopCss();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Formulas — the simplest custom strategy: the formula **is** the value
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Bound for distinct shared formula texts; past it, strategies are built per call (still correct). */
+const MAX_SHARED_FORMULAS = 256;
+const formulaStrategies = new Map<string, ScalingStrategy>();
+/** Shared (unregistered) formula strategies whose CSS variables are in use (`css()`). */
+const publishedFormulas = new Set<ScalingStrategy>();
+let formulaIds = 0;
+
+function textFormulaStrategy(id: string, formula: string): ScalingStrategy {
+  // Errors are the parser's own ("unknown variable 'sww'" with the position), thrown right away.
+  return new ScalingStrategy(id, Object.freeze({ ...DEFAULT_CONFIG, formula: ScalingExpression.parse(formula, FORMULA_VARIABLES) }));
+}
+
+/**
+ * Strategy whose value is the text `formula` (`'base * pow(sw / 360, 0.8)'`), shared per text
+ * (id `"formula:<text>"`, not registered). What `cdp(16, 'base * …')` uses.
+ */
+export function getFormulaScalingStrategy(formula: string): ScalingStrategy {
+  const hit = formulaStrategies.get(formula);
+  if (hit) return hit;
+  const s = textFormulaStrategy(FORMULA_ID_PREFIX + formula, formula);
+  if (formulaStrategies.size < MAX_SHARED_FORMULAS) formulaStrategies.set(formula, s);
+  return s;
+}
+
+export interface ScalingFormulaOptions {
+  /** Strategy id. Without one, a text formula is shared per text and a code formula gets `"formula#<n>"`. */
+  id?: string;
+  /** Default: `true` when `id` is given (like `defineScalingStrategy`), else `false`. */
+  register?: boolean;
+}
+
+/**
+ * One-liner strategy — the formula **is** the final value (`base` = the value you pass):
+ *
+ *   const hud = scalingFormula('base * pow(sw / 360, 0.8)');  // or straight: cdp(16, 'base * …')
+ *   const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+ *
+ * Text variables: `base`, `sw`, `width`, `height`, `shortSide`, `longSide`, `diagonal`,
+ * `aspectRatio`, `density`, `fontScale`, device flags (`tablet`, `tv`, `landscape`, …) and `ratio`
+ * (`sw / 300`, the ratio `sdp` uses). Same language and numbers on every AppDimens platform.
+ * Writing it as `base * (…)` keeps the one-multiply fast path (and `css()` stays a CSS variable);
+ * any other shape works too, evaluated per value. Code formulas have no limits but are not
+ * JSON-serializable.
+ */
+export function scalingFormula(formula: string | ScalingFormula, options: ScalingFormulaOptions = {}): ScalingStrategy {
+  const register = options.register ?? options.id !== undefined;
+  let s: ScalingStrategy;
+  if (typeof formula === 'string') {
+    if (options.id === undefined && !register) return getFormulaScalingStrategy(formula);
+    s = textFormulaStrategy(options.id ?? FORMULA_ID_PREFIX + formula, formula);
+  } else {
+    if (typeof formula !== 'function') throw new TypeError('formula must be a string or a function');
+    const fn = formula;
+    s = new ScalingStrategy(
+      options.id ?? `formula#${++formulaIds}`,
+      Object.freeze({ ...DEFAULT_CONFIG, transform: (base: number, _scaled: number, screen: ScreenSnapshot) => fn(base, screen) }),
+    );
+  }
+  return register ? registerScalingStrategy(s) : s;
+}
+
+let scaleIds = 0;
+
+/**
+ * Strategy from a programmable factor — the most flexible form, written in code. You get the
+ * window and return the **factor** that multiplies every value:
+ *
+ *   const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8));
+ *   cdp(16, product);   // 16 × factor
+ *
+ * The factor depends only on the window, so it runs once per window and every value costs one
+ * multiply (and `css()` stays a CSS variable). A non-finite factor throws when the window resolves.
+ * Without an `id` a unique `"scale#<n>"` id is generated; an `id` registers by default. Not
+ * JSON-serializable: for JSON use a text curve (`curve: { type: 'expression', expression: 'clamp(width / 360, 0.85, 1.8)' }`).
+ */
+export function customScaleStrategy(factor: ScreenFactor, options: ScalingFormulaOptions = {}): ScalingStrategy {
+  if (typeof factor !== 'function') throw new TypeError('factor must be a function');
+  const s = new ScalingStrategy(
+    options.id ?? `scale#${++scaleIds}`,
+    Object.freeze({ ...DEFAULT_CONFIG, curve: Object.freeze({ type: 'custom' as const, fn: (_ratio: number, screen: ScreenSnapshot) => factor(screen) }) }),
+  );
+  return (options.register ?? options.id !== undefined) ? registerScalingStrategy(s) : s;
+}
+
+function publishFormula(s: ScalingStrategy): void {
+  if (!s.id.startsWith(FORMULA_ID_PREFIX) || registry.get(s.id) === s || publishedFormulas.has(s)) return;
+  publishedFormulas.add(s);
+  if (cssStarted) writeCustomCss();
+}
+
+const IDENTIFIER = /^\s*[A-Za-z_][A-Za-z0-9_-]*\s*$/;
+
+/** A registered / built-in / preset id first, else a text formula. */
+function strategyFromString(s: string): ScalingStrategy {
+  const found = getScalingStrategy(s);
+  if (found) return found;
+  try {
+    return getFormulaScalingStrategy(s);
+  } catch (e) {
+    // A bare name that is not a strategy is most likely a typo'd id, not a formula.
+    if (IDENTIFIER.test(s)) requireScalingStrategy(s);
+    throw e;
+  }
+}
+
 const pick = (s?: ScalingStrategy | string): ScalingStrategy =>
-  s === undefined ? getDefaultScalingStrategy() : typeof s === 'string' ? requireScalingStrategy(s) : s;
+  s === undefined ? getDefaultScalingStrategy() : typeof s === 'string' ? strategyFromString(s) : s;
 
 // ── Short functions (`cdp` / `csp`), mirroring `sdp` / `ssp` ──────────────────
+// A string `strategy` is a strategy id or, when no strategy has that id, a text formula:
+// `cdp(16, 'brand')` · `cdp(16, 'base * pow(sw / 360, 0.8)')`.
 /** `value` dp with `strategy` (default strategy when omitted) → CSS px. */
 export const cdp = (value: number, strategy?: ScalingStrategy | string): number => pick(strategy).dp(value);
 /** → device px. */
@@ -389,9 +525,9 @@ export function bindScalingStrategy(strategy: ScalingStrategy, track: () => void
   });
 }
 
-/** Resolves an optional strategy argument (instance, id, or the default). */
+/** Resolves an optional strategy argument (instance, id, text formula, or the default). */
 export function pickScalingStrategy(strategy?: ScalingStrategy | string | null): ScalingStrategy {
-  return strategy == null ? getDefaultScalingStrategy() : typeof strategy === 'string' ? requireScalingStrategy(strategy) : strategy;
+  return strategy == null ? getDefaultScalingStrategy() : typeof strategy === 'string' ? strategyFromString(strategy) : strategy;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -410,10 +546,11 @@ export function customCssDeclarations(
 ): string {
   let out = '';
   const d = getDefaultScalingStrategy();
-  out += `--cdp:${round(d.factor(metrics))}px;--csp:${round(d.resolve(metrics).scaleSpDp(1))}px;`;
+  const dr = d.resolve(metrics);
+  out += `--cdp:${round(dr.valueFactor)}px;--csp:${round(dr.scaleSpDp(1))}px;`;
   for (const s of strategies) {
     const r = s.resolve(metrics);
-    out += `${s.cssVar}:${round(r.factor)}px;${s.cssSpVar}:${round(r.scaleSpDp(1))}px;`;
+    out += `${s.cssVar}:${round(r.valueFactor)}px;${s.cssSpVar}:${round(r.scaleSpDp(1))}px;`;
   }
   return out;
 }
@@ -428,7 +565,8 @@ function writeCustomCss(): void {
       document.head.appendChild(styleEl);
     }
   }
-  const text = `:root:root{${customCssDeclarations(getMetrics())}}`;
+  const strategies = publishedFormulas.size ? [...registry.values(), ...publishedFormulas] : registeredScalingStrategies();
+  const text = `:root:root{${customCssDeclarations(getMetrics(), strategies)}}`;
   if (styleEl.textContent !== text) styleEl.textContent = text;
 }
 

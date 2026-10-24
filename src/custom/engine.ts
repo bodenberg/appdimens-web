@@ -73,6 +73,10 @@ export function screenSnapshot(init: {
 export type CurveFunction = (ratio: number, screen: ScreenSnapshot) => number;
 /** Pure per-value hook `(base, scaled, screen) → dp`, applied after the value bounds. */
 export type ValueTransform = (base: number, scaled: number, screen: ScreenSnapshot) => number;
+/** The simplest custom strategy, in code: `(base, screen) → dp`. Must be pure (cached per window). */
+export type ScalingFormula = (base: number, screen: ScreenSnapshot) => number;
+/** Programmable factor in code: `(screen) → factor` that multiplies every value. Must be pure (runs once per window). */
+export type ScreenFactor = (screen: ScreenSnapshot) => number;
 
 export type CurveSpec =
   | 'linear' | 'power' | 'logarithmic' | 'interpolated' | 'constant'
@@ -244,10 +248,19 @@ export function applyPatch(config: ScalingConfig, patch: ScalingPatch): ScalingC
   return out;
 }
 
-/** True when some path depends on the value itself (bounds / transform). */
+/** True when the formula is `base × (screen-only E)`: a pure screen factor, no per-value work. */
+export function isProportionalFormula(formula: ScalingExpression | undefined): boolean {
+  return formula !== undefined && formula.baseCoefficient !== null;
+}
+
+/**
+ * True when some path depends on the value itself (bounds / transform / formula). A proportional
+ * formula (`base * E`, see {@link isProportionalFormula}) is screen-only, so it does not count.
+ */
 export function isValueDependent(config: ScalingConfig): boolean {
   const dependent = (p: ScalingPatch): boolean =>
-    p.minValue !== undefined || p.maxValue !== undefined || p.transform !== undefined || p.formula !== undefined;
+    p.minValue !== undefined || p.maxValue !== undefined || p.transform !== undefined ||
+    (p.formula !== undefined && !isProportionalFormula(p.formula));
   return dependent(config) || config.rules.some((r) => dependent(r.patch));
 }
 
@@ -347,6 +360,13 @@ export function evaluateCurve(
 
 /** Everything a strategy needs for one window: the screen-only factor plus value-dependent parts. */
 export class ResolvedScaling {
+  /**
+   * `E` of a proportional formula (`base * E`), evaluated once for this window with the same
+   * variables the formula sees; NaN when there is none. `scale(base)` is then `base * E`.
+   */
+  private readonly formulaCoefficient: number;
+  private readonly proportional: boolean;
+
   constructor(
     readonly screen: ScreenSnapshot,
     readonly config: ScalingConfig,
@@ -356,10 +376,26 @@ export class ResolvedScaling {
     readonly referenceDp: number,
     readonly curveFactor: number,
     readonly aspectRatioMultiplier: number,
-  ) {}
+  ) {
+    const e = config.formula?.baseCoefficient;
+    this.proportional = !!e;
+    this.formulaCoefficient = e
+      ? e.evaluate(expressionVariables(screen, referenceDp > 0 ? axisDp / referenceDp : 1, axisDp, referenceDp, config.reference))
+      : NaN;
+  }
+
+  /**
+   * What one dp becomes when the strategy does not depend on the value: `factor`, or `E` of a
+   * proportional formula (`base * E`). Published as `--cdp-<id>`.
+   */
+  get valueFactor(): number {
+    return this.proportional ? this.formulaCoefficient : this.factor;
+  }
 
   /** `base` dp → scaled dp. */
   scale(base: number): number {
+    // `base * E` evaluated per value gives the same double (IEEE multiplication is commutative).
+    if (this.proportional) return base * this.formulaCoefficient;
     let out = base * this.factor;
     const { minValue: min, maxValue: max } = this.config;
     if ((min !== undefined || max !== undefined) && out !== 0) {
@@ -407,6 +443,8 @@ export class ResolvedScaling {
       out += ` clamp[${c.minFactor !== undefined ? fmt(c.minFactor) : '-'}, ${c.maxFactor !== undefined ? fmt(c.maxFactor) : '-'}]`;
     }
     out += ` => factor ${fmt(this.factor)}`;
+    if (c.formula) out += ` then Formula(${c.formula.source})`;
+    else if (c.transform) out += ' then transform';
     if (this.appliedRules.length) out += ` rules=[${this.appliedRules.join(', ')}]`;
     return out;
   }

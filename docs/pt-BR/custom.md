@@ -4,6 +4,58 @@
 
 > **Idiomas:** [English](../custom.md) · Português (BR)
 
+## Início rápido: só escreva a fórmula
+
+O jeito mais fácil é escrever a fórmula você mesmo. Você recebe o valor passado (`base`, por exemplo 16) e a tela, e devolve o valor escalado. Não há nada para configurar.
+
+```ts
+import { cdp, csp, cdpCss, customScaleStrategy, scalingFormula } from 'webdimens/custom';
+
+// 1. Inline: a fórmula é o valor
+cdp(16, 'base * pow(sw / 360, 0.8)');             // px CSS
+csp(20, 'base * min(sw / 360, 1.3)');             // texto, segue a escala de fonte
+cdpCss(16, 'base * (sw / 360)');                  // "calc(16 * var(--cdp-formula-…))" — CSS responsivo
+
+// 2. Com nome, para reutilizar em todo lugar
+const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+hud.dp(48);                                       // ou cdp(48, hud), hud.css(48), useScalingStrategy(hud)
+
+// 3. Em código, sem limites (não serializa em JSON)
+const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+
+// 4. Fator programável: devolva o fator que multiplica todo valor
+const product = customScaleStrategy((screen) => {
+  const width = screen.widthDp;
+  return Math.min(Math.max(width / 360, 0.85), 1.8);
+});
+cdp(16, product);                                 // 16 × fator
+```
+
+| Forma | Você devolve | Custo por valor | JSON |
+|---|---|---|---|
+| `cdp(16, '…')` / `scalingFormula('…')` | o valor final (`base` = entrada) | uma multiplicação no formato `base * (…)`, senão avaliada por valor | sim |
+| `scalingFormula((base, screen) => …)` | o valor final | a função roda por valor | não |
+| `customScaleStrategy((screen) => …)` | o **fator** (qualquer JS: `if`, `switch`, helpers, `Math.min`…) | uma multiplicação (a função roda uma vez por janela); `css()` continua variável CSS | não |
+
+Nas funções, `screen` é um `ScreenSnapshot`: `widthDp`, `heightDp`, `smallestWidthDp`, `density`, `fontScale`, `isLandscape`, `isMultiWindow`, `device` (`'phone'`, `'tablet'`, `'tv'`…). Elas devem ser puras (não podem ler estado mutável), porque os resultados são memorizados por janela. `customScaleStrategy(fn, { id: 'product' })` registra a estratégia (`--cdp-product`, `16cdp-product`).
+
+Uma estratégia em string é primeiro um **id**; quando nenhuma estratégia tem esse id, ela é lida como fórmula. Fórmulas em texto sem `id` são compartilhadas por texto (chamar `scalingFormula` de novo com o mesmo texto devolve a mesma instância) e não são registradas. Passe `{ id: 'hud' }` para registrar com um nome, o que também publica `--cdp-hud` e habilita o literal `16cdp-hud`.
+
+| Você escreve | Significa |
+|---|---|
+| `base` | o valor passado (`16` em `cdp(16, …)`) |
+| `sw` · `width` · `height` | menor largura · largura · altura da janela (dp = px CSS) |
+| `shortSide` · `longSide` · `diagonal` · `aspectRatio` | outras medidas da janela |
+| `ratio` | `sw / 300`, a razão que o `sdp` usa (então `base * ratio` = `sdp`) |
+| `phone` `tablet` `desktop` `tv` `watch` `car` `vr` · `landscape` `portrait` `multiWindow` | 1 quando verdadeiro, 0 quando falso |
+| `density` · `fontScale` | device pixel ratio · escala de fonte do usuário |
+
+Você pode usar `+ - * / ^`, `cond ? a : b`, `min` `max` `clamp` `pow` `sqrt` `log` `round` `lerp` `smoothstep` e mais (veja [Fórmulas livres](#fórmulas-livres-sem-os-limites-das-curvas-embutidas)). Erros de digitação falham na hora com a posição, por exemplo `unknown variable 'sww'`.
+
+**Caminho rápido.** Quando a fórmula tem o formato `base * (…)` e a parte `(…)` não lê `base`, ela custa uma multiplicação por valor: a parte `(…)` é calculada uma vez por janela, e `css()` continua sendo uma variável CSS. Qualquer outro formato também funciona, avaliado por valor (e `css()` devolve o literal em px da viewport atual). `base * sw / 360` é avaliado como escrito, `(base * sw) / 360`. Escreva `base * (sw / 360)` para o caminho rápido.
+
+O mesmo texto funciona no JSON de estratégias (`{"id": "hud", "formula": "base * pow(sw / 360, 0.8)"}`) e dá os mesmos números em todas as plataformas AppDimens. Se precisar de mais estrutura (regras por dispositivo, limites do fator, política de escala de fonte), use a configuração completa abaixo.
+
 ## O que é uma estratégia
 
 Uma estratégia é um objeto simples que transforma a janela atual (viewport ou [escopo de elemento](./runtime.md)) em um único **fator**:
@@ -86,7 +138,7 @@ Você não fica preso às curvas embutidas: escreva a fórmula você mesmo, como
 
 - **Curva por expressão** — devolve o **fator** a partir da tela. É calculada uma vez por janela, como qualquer curva, e continua na via rápida de uma multiplicação.
   `curve: { type: 'expression', expression: 'pow(ratio, 0.8) * (tablet ? 0.9 : 1)' }`
-- **Fórmula** — devolve o **valor final** de cada entrada. Pode usar `base`, `scaled` e `factor`, e substitui ou pós-processa o resultado. A estratégia passa a depender do valor.
+- **Fórmula** — devolve o **valor final** de cada entrada. Pode usar `base`, `scaled` e `factor`, e substitui ou pós-processa o resultado. A estratégia passa a depender do valor (avaliada por valor), a menos que a fórmula seja `base * (…)` sem variável de valor dentro dos parênteses: essa continua só da tela (veja [Início rápido](#início-rápido-só-escreva-a-fórmula)).
   `formula: 'base * pow(sw / 360, 0.7) + 2'` · `formula: 'max(scaled, base)'`
 
 | | |
@@ -194,7 +246,7 @@ console.log(brand.explain());
 ## Desempenho
 
 - O fator é calculado **uma vez por snapshot e por estratégia** e memoizado, então `cdp(16, brand)` custa uma multiplicação.
-- Limites de valor e `transform` acrescentam poucas operações por chamada.
+- Limites de valor, `transform` e fórmulas não proporcionais acrescentam poucas operações por chamada. Uma fórmula `base * (…)` é uma multiplicação.
 - As propriedades CSS só são reescritas quando o snapshot muda.
 - Mantenha as funções `custom` e `transform` **puras**.
 - `webdimens/custom` não tem efeitos colaterais na importação e é eliminado pelo tree-shaking quando não é usado.

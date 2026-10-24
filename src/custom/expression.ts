@@ -51,6 +51,26 @@ export class ScalingExpression {
     return evalNode(this.root, vars);
   }
 
+  private coefficient?: ScalingExpression | null;
+
+  /**
+   * Non-null when the whole formula is `base`, `base * E` or `E * base` and `E` reads no value
+   * variable (`base`, `scaled`, `factor`). Such a formula is a pure screen factor: strategies
+   * evaluate `E` once per window and `base * E` costs one multiply (same result, bit for bit).
+   * @internal
+   */
+  get baseCoefficient(): ScalingExpression | null {
+    if (this.coefficient === undefined) {
+      const r = this.root;
+      let e: Node | null = null;
+      if (isBase(r)) e = { k: 'num', v: 1 };
+      else if (r.k === 'bin' && r.op === '*' && isBase(r.a) && !reads(r.b, VALUE_VARIABLES)) e = r.b;
+      else if (r.k === 'bin' && r.op === '*' && isBase(r.b) && !reads(r.a, VALUE_VARIABLES)) e = r.a;
+      this.coefficient = e ? new ScalingExpression(this.source, e) : null;
+    }
+    return this.coefficient;
+  }
+
   toString(): string {
     return this.source;
   }
@@ -95,6 +115,22 @@ export function expressionVariables(
       default: return NaN;
     }
   };
+}
+
+const VALUE_VARIABLES: ReadonlySet<string> = new Set(['base', 'scaled', 'factor']);
+
+const isBase = (n: Node): boolean => n.k === 'var' && n.name === 'base';
+
+/** True when the subtree reads any of `names`. */
+function reads(n: Node, names: ReadonlySet<string>): boolean {
+  switch (n.k) {
+    case 'num': return false;
+    case 'var': return names.has(n.name);
+    case 'un': return reads(n.a, names);
+    case 'bin': return reads(n.a, names) || reads(n.b, names);
+    case 'tern': return reads(n.c, names) || reads(n.a, names) || reads(n.b, names);
+    case 'call': return n.args.some((a) => reads(a, names));
+  }
 }
 
 function evalNode(n: Node, v: (name: string) => number): number {

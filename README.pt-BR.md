@@ -168,6 +168,20 @@ inversores × flags em 12 tamanhos de janela. Veja a tabela de fórmulas no [REA
 
 Defina sua **própria** lei de escala quando nenhuma das 12 embutidas servir. Você também pode compartilhar uma mesma lei entre apps e plataformas: o mesmo JSON funciona em Android, iOS, Flutter, React Native, KMP, Games e .NET.
 
+O jeito mais simples é escrever a fórmula. `base` é o valor passado, e o resultado é o valor escalado:
+
+```ts
+import { cdp, customScaleStrategy, scalingFormula } from 'webdimens/custom';
+
+cdp(16, 'base * pow(sw / 360, 0.8)');                                       // inline
+const hud = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+hud.sp(18);                                                                 // texto
+const fancy = scalingFormula((base, screen) => base * Math.pow(screen.smallestWidthDp / 360, 0.8));
+const product = customScaleStrategy((screen) => Math.min(Math.max(screen.widthDp / 360, 0.85), 1.8)); // fator programável // JS puro
+```
+
+Para regras por dispositivo, limites do fator ou política de escala de fonte, use a configuração completa:
+
 ```ts
 import { defineScalingStrategy, cdp, csp } from 'webdimens/custom';
 
