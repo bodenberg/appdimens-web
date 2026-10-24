@@ -22,6 +22,7 @@ every feature with runnable examples.
 | CSS variables, pure-CSS fallback, Sass, PostCSS (`padding: 16sdp`, `@dimen`) | [CSS, Sass and PostCSS](./css.md) |
 | `sdp()`, `dimen('16sdp')`, `dimens({…})`, facilitators, builders | [JavaScript API](./javascript.md) |
 | The 12 scaling strategies, formulas and a comparison table | [Strategies](./strategies.md) |
+| Your **own** scaling strategy: DSL / JSON shared with every AppDimens platform, rules per device and screen, presets | [Custom strategies](./custom.md) |
 | React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular, CDN | [Frameworks](./frameworks.md) |
 | Server rendering and first paint | [SSR](./ssr.md) |
 | `install()` options, events, snapshots, UI mode, element scopes | [Runtime](./runtime.md) |

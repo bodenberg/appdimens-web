@@ -101,6 +101,23 @@ React `useDimens()` `useDimensVersion()` `useDimen(fn, deps?)` `useWebDimens(opt
 Vue `WebDimens` plugin, `useDimens()`, `useDimen(fn)` · Svelte stores `metrics`, `dimen(fn)` ·
 Angular `provideWebDimens(opts?)`, `injectDimens()`, `injectDimen(fn)`.
 
+## Custom strategies (`webdimens/custom`)
+
+- **Simplest:** `scalingFormula((scope: FormulaScope) => dp | text, { id?, register? })` — the result is the value; the scope has the text-language names (`base sw width height shortSide longSide diagonal perimeter aspectRatio ratio density fontScale device screen`, booleans `phone tablet desktop tv watch car vr landscape portrait multiWindow`, `pow sqrt ln log10 exp abs round min max clamp lerp smoothstep`), destructuring friendly. `cdp(16, 'base * …')` / `useScalingStrategy('base * …')`: a string that is not a strategy id is a formula (shared per text, `getFormulaScalingStrategy(text)`). `base * (E)` with `E` free of `base`/`scaled`/`factor` is screen-only (one multiply, CSS var `--cdp-formula-<hash>`).
+- **Programmable factor:** `customScaleStrategy((scope: ScreenScope) => factor, { id?, register? })` (e.g. `({ tv, height, ratio }) => (tv ? height / 540 : ratio)`) — code curve, screen-only (once per window), auto id `scale#<n>`, non-finite factor throws on resolve; not JSON.
+- **Define:** `defineScalingStrategy({ id, reference?, axis?, curve?, multiplier?, clamp?, valueClamp?, aspectRatio?, fontScale?, ignoreMultiWindow?, transform?, rules?, extends? })`. It registers the strategy.
+- **JSON:** `loadScalingStrategies(json)` registers every strategy and applies `default`. Export with `exportScalingStrategies()`.
+- **Axis:** `smallestWidth` · `width` · `height` · `min` · `max` · `diagonal` · `perimeter`.
+- **Curves:** `linear` · `power(exponent)` · `logarithmic(k)` · `interpolated(t)` · `constant(factor)` · `breakpoints(points[{at, factor}])` · `expression(text)` · `custom(fn)`.
+- **Free-form formulas:** `curve: { type: 'expression', expression: 'pow(ratio, 0.8) * (tablet ? 0.9 : 1)' }` (factor, memoized) and `formula: 'base * pow(sw / 360, 0.7) + 2'` (per value). Variables `sw width height shortSide longSide diagonal perimeter aspectRatio density fontScale`, flags `landscape portrait multiWindow phone tablet desktop tv watch car vr`, `ratio axis ref refWidth refHeight` (curve), `base scaled factor` (formula); functions `min max clamp pow sqrt ln log log10 log2 exp abs sign floor ceil round lerp step smoothstep`; `ScalingExpression.parse` validates early. Same results on every AppDimens platform.
+- **Rules:** `{ name?, when: { device?, orientation?, smallestWidth?, width?, height?, aspectRatio?: {min?, max?}, multiWindow? }, set: { …fields } }`. Ranges are `min <= v < max`. Matching rules apply in order, and a later rule wins.
+- **Use:**
+  - `cdp(v, s?)` / `cdpPx` / `csp` / `cspPx` (default strategy = `BuiltInStrategies.SCALED` until `setDefaultScalingStrategy`).
+  - `s.dp(v)`, `s.sp(v)`, `s.css(v)`, `s.cssSp(v)`, `s.explain()`, `s.extend(id, patch)`, `s.withAxis(axis)`, `s.toJSON()`.
+- **CSS:** `--cdp-<id>` / `--csp-<id>` (+ `--cdp` / `--csp` for the default). Literals: `16cdp-<id>`, `14csp-<id>`, `16cdp`.
+- **Device class:** the UI mode, then a fine pointer → desktop, then `sw >= 600` → tablet. Override with `setDeviceClassResolver`.
+- **Formula:** `factor = clamp(curve(axis/ref) × multiplier × (1 + k·ln(AR/1.78))^ar, min, max)`, `dp = transform(clampValue(v × factor))`.
+
 ## Formulas (d = axis dp; L = ln(max/min / 1.78); k = 0.08/30)
 
 scaled/percent `d/300`, `a`: `1 + (d−300)(1/300 + k·L)` · power `(d/300)^0.75` · fluid `0.8→1.2` over 320–768 ·

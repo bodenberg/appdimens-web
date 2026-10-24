@@ -12,4 +12,5 @@
 - [Agent skill](skills/SKILL.md): decision flow for applying the library
 - [API reference](skills/reference.md): every function, token grammar, conditions, formulas
 - [Module map](skills/library-map.md): npm entries and Android ↔ web equivalents
+- [Custom strategies](docs/custom.md): simplest form: one line of typed TypeScript with autocomplete, e.g. `customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8))` (factor) or `scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8))` (final value); as text for JSON: `scalingFormula('base * pow(sw / 360, 0.8)')`, `cdp(16, '…')`. Full form: your own scaling law (`defineScalingStrategy({ id, reference, curve, clamp, rules })`, JSON shared with every AppDimens platform, free-form text formulas `{ type: 'expression', expression }` / `formula`, presets), used as `cdp(16, brand)`, `brand.css(16)`, `16cdp-brand` in CSS / PostCSS, `useScalingStrategy()` in frameworks
 - [Changelog](CHANGELOG.md)

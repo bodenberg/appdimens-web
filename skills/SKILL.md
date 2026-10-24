@@ -1,6 +1,6 @@
 ---
 name: webdimens-workflow
-description: Use this skill for any responsive sizing question on the web — making a site or web app scale correctly across phones, tablets, desktops, TVs and foldables — and whenever the user mentions webdimens, appdimens, AppDimens Dynamic for web, sdp, hdp, wdp, ssp, sem, "16sdp"-style units, dimension classes like `p:16sdp`, data-dimen, ad-a / ad-i modifier classes, the webdimens PostCSS plugin, or porting Android dp/sp layouts to CSS/JS. Covers install, choosing a usage form (classes, data-dimen, CSS/PostCSS, JS, frameworks), conditions (orientation, sw/w/h qualifiers, UI mode, multi-window), flags, strategies, resize and SSR.
+description: Use this skill for any responsive sizing question on the web — making a site or web app scale correctly across phones, tablets, desktops, TVs and foldables — and whenever the user mentions webdimens, appdimens, AppDimens Dynamic for web, sdp, hdp, wdp, ssp, sem, "16sdp"-style units, dimension classes like `p:16sdp`, data-dimen, ad-a / ad-i modifier classes, the webdimens PostCSS plugin, or porting Android dp/sp layouts to CSS/JS, or defining a custom scaling strategy (own scaling config, per-device rules, cdp/csp, defineScalingStrategy, scaling JSON shared across platforms). Covers install, choosing a usage form (classes, data-dimen, CSS/PostCSS, JS, frameworks), conditions (orientation, sw/w/h qualifiers, UI mode, multi-window), flags, strategies, resize and SSR.
 ---
 
 # webdimens — project workflow
@@ -46,6 +46,15 @@ Always call `install()` once in the app entry (the CDN script does it automatica
 - `a` suffix (`sdpa`) when very wide/tall windows look too large/small; `i` suffix only for split-screen policies.
 - Other strategies only when visual QA asks for another curve: power `pw` (softer on big screens), fluid `f` (bounded 0.8–1.2×), auto `a`, logarithmic `log` (strong damping), interpolated `i`, percent `p` (+ literal `spaceW(10)`), diagonal `dg`, perimeter `pr`, fill `fl`, fit `ft`, density `d`. Strategies register automatically the first time one of their tokens is used (`dimen('10pwsdp')`, `p:10pwsdp`, `data-dimen`, `class="ad-power"`). For tokens the runtime never sees — hand-written `var(--pwsdp)` or PostCSS output — add `install({ strategies: ['power'] })` (or `'all'`). Import the module only for its named functions (`pwsdp`, `powerDp`).
 - Subtree switch without renaming tokens: `class="ad-power"`, flags: `ad-a`, `ad-i`, `ad-ia`.
+- **Custom strategy** (`webdimens/custom`) only when no built-in passes QA, or one law must be shared with other platforms or apps:
+  0. Simplest form, when the user just wants to write the math: one typed line, autocompleted, with the same names as the text language: `customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8))` (factor, runs once per window, one multiply per value, CSS-var friendly) or `scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8))` (final value; `base` = the value passed). Scope names: `base sw width height shortSide longSide diagonal perimeter aspectRatio ratio density fontScale device screen`, booleans `phone tablet desktop tv watch car vr landscape portrait multiWindow`, math `pow sqrt ln log10 exp abs round min max clamp lerp smoothstep`. Use text (`scalingFormula('base * pow(sw / 360, 0.8)')`, `cdp(16, '…')`) only when the formula must live in JSON or remote config; text shaped `base * (…)` stays on the one-multiply fast path.
+  1. Start from a built-in or preset: `BuiltInStrategies.POWER.extend('x', …)`, `CustomPresets.TABLET_FRIENDLY`, `"extends"`.
+  2. Keep one source: a JSON file loaded with `loadScalingStrategies`, or one module that calls `defineScalingStrategy`. Reuse the ids from `appdimens.config.json` (`customStrategies`) when present.
+  3. Express device or screen differences as `rules` (`when: { device: 'tv' }`, `when: { width: { min: 1024 } }`), never as `if`s at call sites.
+  4. Use `cdp(16, brand)` / `csp(14, brand)` in JS, and `brand.css(16)` / `16cdp-brand` for responsive SSR-safe CSS. In frameworks use `useScalingStrategy()`.
+  5. When no curve fits, write the law as text: `curve: { type: 'expression', expression: '…' }` (factor, stays CSS-var friendly) or `formula: '…'` (per value). Prefer them over JS functions when the strategy lives in JSON or is shared with other platforms.
+  6. `valueClamp` / `formula` / `transform` make the strategy value-dependent, so `css()` falls back to px literals. Use them only for hard limits.
+  7. Verify with `brand.explain()` on a phone, a tablet and a desktop width.
 
 ## Phase 3 — Conditions (Android qualifiers)
 

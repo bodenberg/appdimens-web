@@ -8,6 +8,7 @@
 | `webdimens/<strategy>` | percent (+ `space*`), power, fluid, auto, diagonal, fill, fit, interpolated, logarithmic, perimeter, density | `appdimens-dynamic-<strategy>` |
 | `webdimens/resize` | `autoResizeText`, `fittingTextSize`, `fittingTextPx`, `fittingBoxPx`, bounds | `appdimens-dynamic-resize` |
 | `webdimens/units` | `mm`, `cm`, `inch`, conversions, `radius` | `appdimens-dynamic-units` |
+| `webdimens/custom` | custom strategies: `scalingFormula` / `cdp(16, 'base * …')` (write the formula), `customScaleStrategy` (factor in code), `defineScalingStrategy`, `loadScalingStrategies`, `cdp` / `csp` / `cdpCss`, `ScalingExpression` (free-form formulas), `CustomPresets`, `BuiltInStrategies`, CSS vars `--cdp-<id>` | `appdimens-dynamic-custom` |
 | `webdimens/postcss` | PostCSS plugin (`16sdp` in CSS, `@dimen` blocks) | — |
 | `webdimens/react` · `/vue` · `/svelte` · `/angular` | framework bindings | Compose `AppDimensProvider` |
 | `webdimens/css` · `webdimens/css/all.css` | pure-CSS fallback tokens | — |
@@ -28,6 +29,7 @@
 | `Inverter.SW_TO_LH` (`sdpLh`) | `sdpLh(16)`, `16sdpLh`, `var(--sdpLh)` |
 | `ignoreMultiWindows` (`i`) | `sdpi`, `class="ad-i"`. `@mw` is web-only: it tests the multi-window flag and has no Android qualifier |
 | `applyAspectRatio` (`a`) | `sdpa`, `class="ad-a"` |
+| `scalingStrategy("brand") { … }` / `16.cdp(Brand)` / `ProvideScalingStrategy` | `defineScalingStrategy({ id: 'brand', … })` / `cdp(16, brand)` · `16cdp-brand` / `ScalingStrategyProvider` · `provideScalingStrategy` |
 | `autoResizeTextSp` (BoxWithConstraints) | `autoResizeText(el, …)` |
 
 ## Strategy prefixes

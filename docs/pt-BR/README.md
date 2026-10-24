@@ -22,6 +22,7 @@ Estas páginas cobrem todos os recursos, com exemplos executáveis.
 | Variáveis CSS, fallback em CSS puro, Sass, PostCSS (`padding: 16sdp`, `@dimen`) | [CSS, Sass e PostCSS](./css.md) |
 | `sdp()`, `dimen('16sdp')`, `dimens({…})`, facilitadores, builders | [API JavaScript](./javascript.md) |
 | As 12 estratégias de escala, fórmulas e tabela comparativa | [Estratégias](./strategies.md) |
+| Sua **própria** estratégia de escala: config / JSON compartilhado com todas as plataformas AppDimens, regras por dispositivo e tela, presets | [Estratégias personalizadas](./custom.md) |
 | React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular, CDN | [Frameworks](./frameworks.md) |
 | Renderização no servidor e primeiro paint | [SSR](./ssr.md) |
 | Opções do `install()`, eventos, snapshots, modo de UI, escopos por elemento | [Runtime](./runtime.md) |

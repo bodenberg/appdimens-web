@@ -178,3 +178,19 @@ Os tokens continuam os mesmos (`p:16sdp`); a classe no contêiner muda o signifi
 ```
 
 Próximo: [Solução de problemas](./troubleshooting.md) · [Voltar ao índice](./README.md)
+
+## Uma lei de escala para todo o design system
+
+Distribua um `appdimens-strategies.json` com seus tokens de design e carregue-o em todas as plataformas (web, Android, iOS, Flutter…):
+
+```ts
+import { loadScalingStrategies, cdp } from 'webdimens/custom';
+loadScalingStrategies(await (await fetch('/appdimens-strategies.json')).text());   // define o "default"
+const pad = cdp(16);              // estratégia padrão do arquivo
+```
+
+```css
+.card { padding: 16cdp; font-size: 14csp-brandText; }   /* PostCSS */
+```
+
+Ajustes para TV, relógio ou carro ficam como regras no mesmo arquivo (`{ "when": { "device": "tv" }, "set": { … } }`), sem mudar nenhum ponto de chamada. Veja [Estratégias personalizadas](./custom.md).

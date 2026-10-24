@@ -222,6 +222,50 @@ strategies × axes × inverters × flags against an independent transcription on
 A strategy registers itself on first use (a JS token, a class or `data-dimen` value, an `ad-<strategy>` class); its CSS tokens
 are published from then on. For hand-written `var(--fsdp)` or PostCSS output, list it: `install({ strategies: ['fluid'] })`.
 
+## Custom strategies (`webdimens/custom`)
+
+Define your **own** scaling law when none of the 12 built-ins fits. You can also share one law across apps and platforms: the same JSON works on Android, iOS, Flutter, React Native, KMP, Games and .NET.
+
+The simplest way is to write the math as ordinary TypeScript on one line. The editor autocompletes `base`, `sw`, `width`, `tablet`, `pow`, `clamp`…, and typos are type errors:
+
+```ts
+import { cdp, csp, customScaleStrategy, scalingFormula } from 'webdimens/custom';
+
+const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8)); // factor × every value
+const hud = scalingFormula(({ base, sw, pow }) => base * pow(sw / 360, 0.8));           // final value (base = 16 in cdp(16, hud))
+cdp(16, product);
+csp(18, hud);
+cdp(16, 'base * pow(sw / 360, 0.8)');   // same thing as text, for JSON / remote config
+```
+
+For rules per device, factor bounds or a font-scale policy, use the full configuration:
+
+```ts
+import { defineScalingStrategy, cdp, csp } from 'webdimens/custom';
+
+const brand = defineScalingStrategy({
+  id: 'brand',
+  reference: { width: 360, height: 640 },
+  curve: { type: 'power', exponent: 0.8 },
+  clamp: { min: 0.85, max: 1.6 },
+  rules: [{ when: { device: ['tablet', 'desktop'] }, set: { curve: { type: 'logarithmic', k: 0.4 } } }],
+});
+
+cdp(16, brand);            // CSS px · csp(14, brand) for text
+brand.css(16);             // "calc(16 * var(--cdp-brand))"
+```
+
+```css
+.card { padding: 8cdp-brand 16cdp-brand; font-size: 14csp-brand; }   /* PostCSS / dimens() */
+```
+
+The module also covers:
+- Presets: `CustomPresets.TV_SAFE`, `TABLET_FRIENDLY`, `WEARABLE`, `GAME_HUD`…
+- `BuiltInStrategies.POWER.extend(…)` and `loadScalingStrategies(json)`.
+- React / Vue / Svelte / Angular helpers (`useScalingStrategy`).
+
+Guide: [docs/custom.md](docs/custom.md).
+
 ## Runtime
 
 ```ts

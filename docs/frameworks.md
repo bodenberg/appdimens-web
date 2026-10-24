@@ -195,6 +195,17 @@ export class CardComponent {
 `DestroyRef`. `provideWebDimens()` installs the runtime when the environment injector starts (browser only, so it is safe
 with Angular SSR).
 
+## Custom strategies in every framework
+
+| Framework | Scope | Use |
+|---|---|---|
+| React | `<ScalingStrategyProvider strategy={brand}>` | `const s = useScalingStrategy(); s.dp(16)` |
+| Vue | `provideScalingStrategy(brand)` | `const s = useScalingStrategy(); s.dp(16)` · `useCdp(16)` |
+| Svelte | — | `const brand = scalingStrategy('brand')` → `{$brand.dp(16)}` |
+| Angular | `provideScalingStrategy(brand)` | `s = injectScalingStrategy()` → `s().dp(16)` |
+
+All of them re-render on snapshot changes. For SSR-safe styles prefer `brand.css(16)` (CSS variables). See [Custom strategies](./custom.md).
+
 ## Plain HTML and the CDN bundle
 
 ```html

@@ -23,8 +23,9 @@ import { PERIMETER } from './strategies/perimeter';
 import { POWER } from './strategies/power';
 import * as resize from './resize';
 import * as units from './units';
+import * as custom from './custom';
 
-const api: Record<string, unknown> = { ...core, ...space, ...resize, ...units };
+const api: Record<string, unknown> = { ...core, ...space, ...resize, ...units, ...custom };
 for (const def of [SCALED, PERCENT, POWER, FLUID, AUTO, DIAGONAL, FILL, FIT, INTERPOLATED, LOGARITHMIC, PERIMETER, DENSITY]) {
   Object.assign(api, buildNamespace(def));
 }

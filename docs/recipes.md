@@ -181,3 +181,19 @@ strategy automatically.
 ```
 
 Next: [Troubleshooting](./troubleshooting.md) · [Back to the index](./README.md)
+
+## One scaling law for a whole design system
+
+Ship one `appdimens-strategies.json` with your design tokens and load it on every platform (web, Android, iOS, Flutter…):
+
+```ts
+import { loadScalingStrategies, cdp } from 'webdimens/custom';
+loadScalingStrategies(await (await fetch('/appdimens-strategies.json')).text());   // sets "default"
+const pad = cdp(16);              // default strategy from the file
+```
+
+```css
+.card { padding: 16cdp; font-size: 14csp-brandText; }   /* PostCSS */
+```
+
+TV, watch or car tweaks live as rules in the same file (`{ "when": { "device": "tv" }, "set": { … } }`), so no call site changes. See [Custom strategies](./custom.md).
