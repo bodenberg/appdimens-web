@@ -137,6 +137,8 @@ export class ScalingStrategy {
   readonly cssSpVar: string;
   private memoKey: object | null = null;
   private memo: ResolvedScaling | null = null;
+  /** `withAxis` variants of this instance (per source instance, never shared across same-id strategies). */
+  private readonly axisVariants = new Map<ScalingAxis, ScalingStrategy>();
 
   constructor(readonly id: string, readonly config: ScalingConfig) {
     if (!id || !id.trim()) throw new TypeError('strategy id must not be blank');
@@ -218,14 +220,13 @@ export class ScalingStrategy {
     return options.register === false ? s : registerScalingStrategy(s);
   }
 
-  /** Same strategy on another axis. Id `"<id>@<axis>"`, cached. */
+  /** Same strategy on another axis. Id `"<id>@<axis>"`, cached per source instance. */
   withAxis(axis: ScalingAxis): ScalingStrategy {
     if (axis === this.config.axis) return this;
-    const id = `${this.id}@${axis}`;
-    let s = derived.get(id);
-    if (!s || s.config.rules !== this.config.rules) {
-      s = new ScalingStrategy(id, Object.freeze({ ...this.config, axis }));
-      derived.set(id, s);
+    let s = this.axisVariants.get(axis);
+    if (!s) {
+      s = new ScalingStrategy(`${this.id}@${axis}`, Object.freeze({ ...this.config, axis }));
+      this.axisVariants.set(axis, s);
     }
     return s;
   }
@@ -243,7 +244,6 @@ const round = (n: number): number => Math.round(n * 1e4) / 1e4;
 // ─────────────────────────────────────────────────────────────────────────────
 
 const registry = new Map<string, ScalingStrategy>();
-const derived = new Map<string, ScalingStrategy>();
 let defaultStrategy: ScalingStrategy | null = null;
 
 const spec = (s: ScalingStrategySpec): ScalingStrategy => new ScalingStrategy(s.id, configFromSpec(s, DEFAULT_CONFIG, s.id));
@@ -338,9 +338,11 @@ export function loadScalingStrategies(
   input: string | ScalingStrategiesDocument | ScalingStrategySpec | readonly ScalingStrategySpec[],
 ): Map<string, ScalingStrategy> {
   const { configs, defaultId } = parseStrategiesDocument(input, (id) => getScalingStrategy(id)?.config);
+  // Resolve the default first, so a document with an unknown default registers nothing.
+  const fallbackDefault = defaultId !== undefined && !configs.has(defaultId) ? requireScalingStrategy(defaultId) : undefined;
   const out = new Map<string, ScalingStrategy>();
   configs.forEach((cfg, id) => out.set(id, registerScalingStrategy(new ScalingStrategy(id, cfg))));
-  if (defaultId !== undefined) setDefaultScalingStrategy(out.get(defaultId) ?? requireScalingStrategy(defaultId));
+  if (defaultId !== undefined) setDefaultScalingStrategy(out.get(defaultId) ?? fallbackDefault!);
   return out;
 }
 
@@ -356,7 +358,6 @@ export function exportScalingStrategies(strategies: readonly ScalingStrategy[] =
 /** Test helper — clears registry, default and CSS. */
 export function resetScalingStrategiesForTest(): void {
   registry.clear();
-  derived.clear();
   formulaStrategies.clear();
   publishedFormulas.clear();
   formulaIds = 0;

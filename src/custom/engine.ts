@@ -386,6 +386,9 @@ export function validateConfig(config: ScalingConfig): ScalingConfig {
     if (c.minFactor !== undefined && c.maxFactor !== undefined && c.minFactor > c.maxFactor) {
       throw new RangeError(`${where}: minFactor must be <= maxFactor`);
     }
+    // Value bounds clamp the magnitude, so they must not be negative.
+    if (c.minValue !== undefined && c.minValue < 0) throw new RangeError(`${where}: minValue must be >= 0`);
+    if (c.maxValue !== undefined && c.maxValue < 0) throw new RangeError(`${where}: maxValue must be >= 0`);
     if (c.minValue !== undefined && c.maxValue !== undefined && c.minValue > c.maxValue) {
       throw new RangeError(`${where}: minValue must be <= maxValue`);
     }
@@ -694,6 +697,20 @@ function readDevice(v: unknown, path: string): DeviceClass {
   return v as DeviceClass;
 }
 
+/** A present (non-null) value must be an object; `null` / absent → undefined. */
+function obj<T>(v: T | null | undefined, path: string): T | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== 'object' || Array.isArray(v)) throw new TypeError(`${path} must be an object`);
+  return v;
+}
+
+/** A present (non-null) value must be a boolean; `null` / absent → undefined. */
+function bool(v: unknown, path: string): boolean | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (typeof v !== 'boolean') throw new TypeError(`${path} must be a boolean`);
+  return v;
+}
+
 /** Validates a patch-shaped spec (strategy root or rule `set`). */
 export function readPatch(o: ScalingPatchSpec, path: string): ScalingPatch {
   const out: { -readonly [K in keyof ScalingPatch]: ScalingPatch[K] } = {};
@@ -709,25 +726,27 @@ export function readPatch(o: ScalingPatchSpec, path: string): ScalingPatch {
   }
   if (o.curve !== undefined) out.curve = readCurve(o.curve, `${path}.curve`);
   if (o.multiplier !== undefined) out.multiplier = num(o.multiplier, `${path}.multiplier`);
-  if (o.clamp) {
-    out.minFactor = num(o.clamp.min, `${path}.clamp.min`);
-    out.maxFactor = num(o.clamp.max, `${path}.clamp.max`);
+  const clamp = obj(o.clamp, `${path}.clamp`);
+  if (clamp) {
+    out.minFactor = num(clamp.min, `${path}.clamp.min`);
+    out.maxFactor = num(clamp.max, `${path}.clamp.max`);
   }
-  if (o.valueClamp) {
-    out.minValue = num(o.valueClamp.min, `${path}.valueClamp.min`);
-    out.maxValue = num(o.valueClamp.max, `${path}.valueClamp.max`);
+  const valueClamp = obj(o.valueClamp, `${path}.valueClamp`);
+  if (valueClamp) {
+    out.minValue = num(valueClamp.min, `${path}.valueClamp.min`);
+    out.maxValue = num(valueClamp.max, `${path}.valueClamp.max`);
   }
   const ar = o.aspectRatio;
   if (ar !== undefined) {
     if (typeof ar === 'boolean') out.aspectRatio = ar;
     else if (ar && typeof ar === 'object') {
-      out.aspectRatio = ar.enabled ?? true;
+      out.aspectRatio = bool(ar.enabled, `${path}.aspectRatio.enabled`) ?? true;
       out.sensitivity = num(ar.sensitivity, `${path}.aspectRatio.sensitivity`);
     } else throw new TypeError(`${path}.aspectRatio must be a boolean or object`);
   }
   if (o.sensitivity !== undefined && out.sensitivity === undefined) out.sensitivity = num(o.sensitivity, `${path}.sensitivity`);
   if (o.fontScale !== undefined) out.fontScale = readFontScale(o.fontScale, `${path}.fontScale`);
-  if (o.ignoreMultiWindow !== undefined) out.ignoreMultiWindow = o.ignoreMultiWindow === true;
+  out.ignoreMultiWindow = bool(o.ignoreMultiWindow, `${path}.ignoreMultiWindow`);
   if (o.transform !== undefined) {
     if (typeof o.transform !== 'function') throw new TypeError(`${path}.transform must be a function`);
     out.transform = o.transform;
@@ -764,7 +783,7 @@ export function readCondition(o: ScreenConditionSpec | undefined, path: string):
   [out.minWidth, out.maxWidth] = readRange(o.width, `${path}.width`);
   [out.minHeight, out.maxHeight] = readRange(o.height, `${path}.height`);
   [out.minAspectRatio, out.maxAspectRatio] = readRange(o.aspectRatio, `${path}.aspectRatio`);
-  if (o.multiWindow !== undefined) out.multiWindow = o.multiWindow === true;
+  out.multiWindow = bool(o.multiWindow, `${path}.multiWindow`);
   for (const k of Object.keys(out) as (keyof ScreenCondition)[]) if (out[k] === undefined) delete out[k];
   return Object.freeze(out);
 }
@@ -776,10 +795,12 @@ export function configFromSpec(spec: ScalingPatchSpec & { rules?: readonly Scali
   if (spec.valueClamp === null) cfg = { ...cfg, minValue: undefined, maxValue: undefined };
   if (spec.formula === null) cfg = { ...cfg, formula: undefined };
   const rules = (spec.rules ?? []).map((r, i) => {
-    if (!r || typeof r !== 'object' || !r.set) throw new TypeError(`${path}.rules[${i}].set is required`);
+    if (!r || typeof r !== 'object') throw new TypeError(`${path}.rules[${i}] must be an object`);
+    const set = obj(r.set, `${path}.rules[${i}].set`);
+    if (!set) throw new TypeError(`${path}.rules[${i}].set is required`);
     return Object.freeze({
-      condition: readCondition(r.when, `${path}.rules[${i}].when`),
-      patch: readPatch(r.set, `${path}.rules[${i}].set`),
+      condition: readCondition(obj(r.when, `${path}.rules[${i}].when`), `${path}.rules[${i}].when`),
+      patch: readPatch(set, `${path}.rules[${i}].set`),
       ...(r.name !== undefined ? { name: r.name } : {}),
     }) as ScalingRule;
   });
@@ -821,6 +842,8 @@ function patchToSpec(p: ScalingPatch, defaults: boolean): ScalingPatchSpec {
   if (p.minValue !== undefined || p.maxValue !== undefined) o.valueClamp = range(p.minValue, p.maxValue);
   if (p.aspectRatio !== undefined && (!defaults || p.aspectRatio || p.sensitivity !== undefined)) {
     o.aspectRatio = p.sensitivity !== undefined ? { enabled: p.aspectRatio, sensitivity: p.sensitivity } : { enabled: p.aspectRatio };
+  } else if (p.aspectRatio === undefined && p.sensitivity !== undefined) {
+    o.sensitivity = p.sensitivity; // sensitivity-only patch
   }
   if (p.fontScale && (!defaults || p.fontScale.type !== 'follow')) o.fontScale = fontScaleToSpec(p.fontScale);
   if (p.ignoreMultiWindow !== undefined && (!defaults || p.ignoreMultiWindow)) o.ignoreMultiWindow = p.ignoreMultiWindow;

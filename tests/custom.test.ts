@@ -156,6 +156,31 @@ describe('custom JSON', () => {
     expect(() => parseStrategiesDocument(json, none)).toThrow(/rules\[0\]\.when\.width must be an object with min\/max/);
   });
 
+  it('malformed JSON fails loudly and loading is atomic', () => {
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","rules":[{"when":"tablet","set":{"multiplier":2}}]}]}')).toThrow(/when must be an object/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","rules":[{"set":"big"}]}]}')).toThrow(/set must be an object/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","ignoreMultiWindow":"true"}]}')).toThrow(/must be a boolean/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","rules":[{"when":{"multiWindow":1},"set":{}}]}]}')).toThrow(/multiWindow must be a boolean/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","aspectRatio":{"enabled":"yes"}}]}')).toThrow(/aspectRatio\.enabled must be a boolean/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","clamp":1.5}]}')).toThrow(/clamp must be an object/);
+    expect(() => loadScalingStrategies('{"strategies":[{"id":"x","valueClamp":[1,2]}]}')).toThrow(/valueClamp must be an object/);
+    expect(() => defineScalingStrategy({ id: 'neg', valueClamp: { max: -1 } }, { register: false })).toThrow(/maxValue must be >= 0/);
+    expect(() => defineScalingStrategy({ id: 'neg', valueClamp: { min: -1 } }, { register: false })).toThrow(/minValue must be >= 0/);
+    expect(() => loadScalingStrategies('{"default":"missing","strategies":[{"id":"atomic","multiplier":2}]}')).toThrow(/missing/);
+    expect(getScalingStrategy('atomic')).toBeUndefined(); // nothing registered by the failed load
+    // withAxis is cached per source instance, not per id.
+    const a = defineScalingStrategy({ id: 'same', multiplier: 1 }, { register: false });
+    const b = defineScalingStrategy({ id: 'same', multiplier: 2 }, { register: false });
+    expect(a.withAxis('height').config.multiplier).toBe(1);
+    expect(b.withAxis('height').config.multiplier).toBe(2);
+    expect(b.withAxis('height')).toBe(b.withAxis('height'));
+    // A sensitivity-only rule patch survives export + import.
+    const s = loadScalingStrategies('{"strategies":[{"id":"sens","aspectRatio":true,"rules":[{"when":{"device":"tablet"},"set":{"sensitivity":0.01}}]}]}').get('sens')!;
+    expect(s.toJSON().rules![0]!.set).toEqual({ sensitivity: 0.01 });
+    const again = loadScalingStrategies({ strategies: [s.toJSON()] }).get('sens')!;
+    expect(again.resolveScreen(tablet).factor).toBe(s.resolveScreen(tablet).factor);
+  });
+
   it('ignoreMultiWindow skips the formula in multi-window', () => {
     const s = defineScalingStrategy({ id: 'mw', ignoreMultiWindow: true, formula: 'base * 3' });
     const mw = screenSnapshot({ widthDp: 411, heightDp: 891, isMultiWindow: true });
