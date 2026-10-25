@@ -7,7 +7,7 @@ description: Use this skill for any responsive sizing question on the web — ma
 
 **Library:** `webdimens` 3.2.0 — web port of AppDimens Dynamic 3.2.0 (Android). Same math, same names.
 **Install:** `npm i webdimens` (or `yarn add` / `pnpm add`) · CDN `https://cdn.jsdelivr.net/npm/webdimens@3/dist/webdimens.global.js`.
-**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web) · full docs in [docs/](../docs/README.md) (recipes: docs/recipes.md, troubleshooting: docs/troubleshooting.md).
+**Reference:** [reference.md](reference.md) (complete API) · [library-map.md](library-map.md) (modules, Android ↔ web) · [custom.md](custom.md) (custom strategies) · full docs in [docs/](../docs/README.md) (recipes: docs/recipes.md, troubleshooting: docs/troubleshooting.md).
 
 ---
 
@@ -55,6 +55,7 @@ Always call `install()` once in the app entry (the CDN script does it automatica
   5. When no curve fits, write the law as text: `curve: { type: 'expression', expression: '…' }` (factor, stays CSS-var friendly) or `formula: '…'` (per value). Prefer them over JS functions when the strategy lives in JSON or is shared with other platforms.
   6. `valueClamp` / `formula` / `transform` make the strategy value-dependent, so `css()` falls back to px literals. Use them only for hard limits.
   7. Verify with `brand.explain()` on a phone, a tablet and a desktop width.
+  Full agent reference: [custom.md](custom.md); docs: [docs/custom/](../docs/custom/README.md).
 
 ## Phase 3 — Conditions (Android qualifiers)
 

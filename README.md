@@ -264,7 +264,7 @@ The module also covers:
 - `BuiltInStrategies.POWER.extend(…)` and `loadScalingStrategies(json)`.
 - React / Vue / Svelte / Angular helpers (`useScalingStrategy`).
 
-Guide: [docs/custom.md](docs/custom.md).
+Guide: [docs/custom.md](docs/custom.md) · full documentation: [docs/custom/](docs/custom/README.md) (quick start, code and text formulas, configuration, JSON, API, performance, cookbook, troubleshooting).
 
 ## Runtime
 
