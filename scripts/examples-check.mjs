@@ -103,6 +103,19 @@ for (const file of pages) {
   await page.close();
 }
 
+// custom.html — custom strategy resolves and publishes its CSS variable.
+{
+  const { page } = await open('custom.html', { width: 360, height: 740 });
+  const r = await page.evaluate(() => ({
+    custom: window.__custom,
+    cssVar: getComputedStyle(document.documentElement).getPropertyValue('--cdp-brand').trim(),
+  }));
+  const expected = 48 * Math.max(0.85, Math.pow(360 / 360, 0.8));
+  check('custom: brand factor at 360 wide', Math.abs(r.custom.brand - expected) < 1e-6, JSON.stringify(r));
+  check('custom: --cdp-brand published', /px$/.test(r.cssVar), JSON.stringify(r));
+  await page.close();
+}
+
 await browser.close();
 if (failures) {
   console.error(`\n${failures} example check(s) failed.`);

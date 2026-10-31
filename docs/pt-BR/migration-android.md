@@ -97,6 +97,17 @@ As sobrecargas, a prioridade (modo + qualificador > modo > qualificador, limiar 
 | `ResizeBound.FixedDp/FixedSp/Percent` | `resizeFixedDp`, `resizeFixedSp`, `resizePercentSw/W/H`, `resizePercentBox` |
 | `10f.mm` · `2.5f.cm` · `1f.inch` | `mm(10)` · `cm(2.5)` · `inch(1)` de `webdimens/units` |
 
+
+## Estratégias personalizadas
+
+| Android (`appdimens-dynamic-custom`) | Web (`webdimens/custom`) |
+|---|---|
+| `scalingStrategy("brand") { curve = power(0.8f); on(DeviceClass.TABLET) { … } }` | `defineScalingStrategy({ id: 'brand', curve: { type: 'power', exponent: 0.8 }, rules: [{ when: { device: 'tablet' }, set: { … } }] })` |
+| `16.cdp(Brand)` / `14.csp(Brand)` | `cdp(16, brand)` / `csp(14, brand)` · `brand.css(16)` · `16cdp-brand` |
+| `ProvideScalingStrategy(Brand) { … }` | `<ScalingStrategyProvider strategy={brand}>` · `provideScalingStrategy(brand)` |
+| `ScalingStrategies.loadAsset(context, "x.json")` | `loadScalingStrategies(jsonText)`, com o **mesmo arquivo JSON** |
+| `CustomPresets.TV_SAFE`, `BuiltInStrategies.POWER.extend(…)` | `CustomPresets.TV_SAFE`, `BuiltInStrategies.POWER.extend(…)` |
+
 ## O que é diferente na web
 
 | Tópico | Android | Web |

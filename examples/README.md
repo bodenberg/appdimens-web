@@ -12,6 +12,7 @@ loaded in Chromium by `scripts/examples-check.mjs` in CI.
 | [scope.html](./scope.html) | `createDimenScope`: tokens that follow a resizable panel instead of the window |
 | [resize.html](./resize.html) | `autoResizeText` with single-line, `maxLines: 2` and editable text |
 | [css-only.html](./css-only.html) | pure-CSS fallback tokens, no JavaScript |
+| [custom.html](./custom.html) | custom strategies (`defineScalingStrategy`, presets, `--cdp-<id>` CSS variables, `explain()`) |
 | [postcss/](./postcss/) | `padding: 16sdp` and `@dimen` blocks compiled at build time |
 | [react-example.tsx](./react-example.tsx) · [vue-example.vue](./vue-example.vue) · [svelte-example.svelte](./svelte-example.svelte) · [angular-example.ts](./angular-example.ts) | framework snippets |
 
