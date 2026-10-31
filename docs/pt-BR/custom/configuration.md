@@ -29,7 +29,8 @@ Passe `{ register: false }` como segundo argumento para criar uma estratégia de
 ```
 ratio  = axis(janela) / axis(referência)
 factor = clamp( curve(ratio) × multiplier × AR , clamp.min, clamp.max )
-value  = formula( valueClamp( base × factor ) )
+scaled = valueClamp( base × factor )   // o resultado configurado
+value  = formula ? formula(base, scaled, factor) : scaled   // a fórmula substitui o resultado (recebe o base original)
 ```
 
 ## Campos

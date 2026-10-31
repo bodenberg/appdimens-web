@@ -32,7 +32,8 @@ The 12 built-in strategies (`sdp`, `pwsdp`, `asdp`…) cover most sites. When yo
 ```
 ratio  = axis(window) / axis(reference)                  // e.g. sw / 300
 factor = clamp( curve(ratio) × multiplier × AR , min, max )   // once per window snapshot
-value  = formula( valueClamp( base × factor ) )           // per value, only if needed
+scaled = valueClamp( base × factor )   // the configured result
+value  = formula ? formula(base, scaled, factor) : scaled   // a formula replaces the result (it gets the original base)
 ```
 
 `customScaleStrategy(…)` replaces the whole `factor` line. `scalingFormula(…)` replaces the whole `value` line. The full configuration lets you set each piece and change it per device with rules. Values are dp, which on the web are CSS px. The numbers are the same on every AppDimens platform: a shared 540-case fixture checks it (`tests/fixtures/custom-strategy-fixture.json`).

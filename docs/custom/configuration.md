@@ -29,7 +29,8 @@ Pass `{ register: false }` as the second argument to build a throwaway strategy.
 ```
 ratio  = axis(window) / axis(reference)
 factor = clamp( curve(ratio) × multiplier × AR , clamp.min, clamp.max )
-value  = formula( valueClamp( base × factor ) )
+scaled = valueClamp( base × factor )   // the configured result
+value  = formula ? formula(base, scaled, factor) : scaled   // a formula replaces the result (it gets the original base)
 ```
 
 ## Fields
