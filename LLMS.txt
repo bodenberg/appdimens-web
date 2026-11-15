@@ -16,3 +16,5 @@
 - [Custom strategy guides](docs/custom/README.md): quick start, code formulas, text formulas, configuration, JSON, API, performance, cookbook, troubleshooting (pt-BR: docs/pt-BR/custom/README.md)
 - [Custom strategies: agent reference](skills/custom.md): decision flow and rules for custom strategies
 - [Changelog](CHANGELOG.md)
+
+Family (same tokens and math): appdimens-dynamic (Android), appdimens-sdps/ssps (XML), appdimens-kmp, appdimens-ios, appdimens-flutter, appdimens-react-native, appdimens-web, appdimens-net-binding (.NET), appdimens-qt, appdimens-gtk, appdimens-lvgl, appdimens-roku, appdimens-py, appdimens-games — https://github.com/bodenberg/appdimens · agent skills: https://github.com/bodenberg/appdimens-skills
