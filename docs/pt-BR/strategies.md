@@ -166,6 +166,10 @@ factor = devicePixelRatio                    (independente do eixo)
 A escala de densidade clássica do Android (`densityDpi / 160`); na web é a razão de pixels do dispositivo, então os valores não
 dependem do tamanho da janela. Raramente é o que um layout web precisa; é fornecida por paridade.
 
+## Personalizada — `webdimens/custom` · `cdp` / `csp`
+
+Quando nenhuma das doze curvas serve, defina a sua: frame de referência, eixo, curva (`linear`, `power`, `logarithmic`, `interpolated`, `constant`, `breakpoints`, uma `expression` livre em texto ou uma função; além de uma `formula` por valor), limites de fator e de valor, política de font scale e regras por classe de dispositivo / faixa de tela / orientação. Use como `cdp(16, brand)`, `brand.css(16)` ou `16cdp-brand`. O mesmo JSON funciona em todas as plataformas AppDimens. Veja [Estratégias personalizadas](./custom.md).
+
 ## Usando várias estratégias
 
 Toda definição de estratégia vem com o núcleo, e uma estratégia **se registra no primeiro uso** — um token JS

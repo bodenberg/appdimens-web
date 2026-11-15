@@ -10,11 +10,24 @@
  * SSR: inline JS values render with the server snapshot; prefer CSS tokens
  * (`cssDimen('sdp', 16)` → `calc(16 * var(--sdp))`) for server-rendered markup.
  */
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DependencyList, type RefObject } from 'react';
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type DependencyList,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { createDimenScope, type DimenScope, type DimenScopeOptions } from './core/scope';
 import type { DimenMetrics } from './core/metrics';
 import { install, type InstallOptions } from './core/install';
 import { getMetrics, getVersion, S, subscribe } from './core/runtime';
+import { bindScalingStrategy, pickScalingStrategy, type BoundScalingStrategy, type ScalingStrategy } from './custom/index';
 
 const serverMetrics = (): DimenMetrics => S.metrics;
 const serverVersion = (): number => S.version;
@@ -92,4 +105,25 @@ export function useDimenScope<T extends HTMLElement>(
     [],
   );
   return scope;
+}
+
+// ── Custom scaling strategies (`webdimens/custom`) ────────────────────────────
+
+const ScalingStrategyContext = createContext<ScalingStrategy | null>(null);
+
+/** Every `useScalingStrategy()` without an argument inside `children` uses `strategy`. */
+export function ScalingStrategyProvider(props: { strategy: ScalingStrategy | string; children?: ReactNode }) {
+  return createElement(ScalingStrategyContext.Provider, { value: pickScalingStrategy(props.strategy) }, props.children);
+}
+
+/**
+ * Helpers bound to `strategy` (default: nearest `ScalingStrategyProvider`, then the global
+ * default); re-renders on snapshot changes. `const s = useScalingStrategy(); s.dp(16)`.
+ */
+export function useScalingStrategy(strategy?: ScalingStrategy | string): BoundScalingStrategy {
+  const version = useDimensVersion();
+  const scoped = useContext(ScalingStrategyContext);
+  const target = strategy === undefined ? scoped ?? pickScalingStrategy() : pickScalingStrategy(strategy);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => bindScalingStrategy(target), [target, version]);
 }

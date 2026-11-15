@@ -44,12 +44,12 @@ cjs.setMetrics({ screenWidthDp: 450, screenHeightDp: 900 });
 if (Math.abs(cjs.sdp(10) - 15) > 1e-9) fail('CJS sdp(10) != 15 on a 450 dp window');
 ok('CJS entry resolves');
 
-for (const sub of ['percent', 'power', 'fluid', 'auto', 'diagonal', 'fill', 'fit', 'interpolated', 'logarithmic', 'perimeter', 'density', 'resize', 'units', 'svelte']) {
+for (const sub of ['percent', 'power', 'fluid', 'auto', 'diagonal', 'fill', 'fit', 'interpolated', 'logarithmic', 'perimeter', 'density', 'resize', 'units', 'custom', 'svelte']) {
   const m = await import(pathToFileURL(join(root, `dist/${sub}.js`)).href);
   if (Object.keys(m).length === 0) fail(`dist/${sub}.js has no exports`);
   require(join(root, `dist/${sub}.cjs`));
 }
-ok('strategy / resize / units / svelte entries load (ESM + CJS)');
+ok('strategy / resize / units / custom / svelte entries load (ESM + CJS)');
 
 // 3. CDN bundles in a fake browser global
 for (const file of ['dist/webdimens.global.js', 'dist/webdimens.lite.global.js']) {

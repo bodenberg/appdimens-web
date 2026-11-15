@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>webdimens — custom strategies</title>
+  <script src="../dist/webdimens.global.js"></script>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    main { display: grid; gap: 12px; padding: calc(16 * var(--cdp-brand)); }
+    .card { border-radius: calc(12 * var(--cdp-brand)); padding: calc(16 * var(--cdp-brand)); background: #f3e5f5; }
+    .card h2 { margin: 0; font-size: calc(20 * var(--csp-brand)); }
+    .row { display: flex; gap: 8px; align-items: end; }
+    .box { background: #6a1b9a; border-radius: 6px; }
+    pre { white-space: pre-wrap; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <h2>Custom strategy “brand” (resize the window)</h2>
+      <div class="row" id="boxes"></div>
+      <pre id="explain"></pre>
+    </section>
+  </main>
+  <script>
+    const { defineScalingStrategy, scalingFormula, customScaleStrategy, CustomPresets, subscribe } = WebDimens;
+    // Same JSON shape as every AppDimens platform (custom-strategy.schema.json).
+    const brand = defineScalingStrategy({
+      id: 'brand',
+      reference: { width: 360, height: 640 },
+      curve: { type: 'power', exponent: 0.8 },
+      clamp: { min: 0.85, max: 1.6 },
+      fontScale: { max: 1.3 },
+      rules: [{ name: 'large', when: { device: ['tablet', 'desktop'] }, set: { curve: { type: 'logarithmic', k: 0.4 } } }],
+    });
+    // Simplest forms: the formula is the value, or a factor computed in code.
+    const formula = scalingFormula('base * (tablet ? 0.9 : 1) * clamp(sw / 360, 0.85, 1.6)');
+    const product = customScaleStrategy(({ width, clamp }) => clamp(width / 360, 0.85, 1.8), { id: 'product' });
+    const code = scalingFormula(({ base, tablet, sw, pow }) => (tablet ? base * 1.2 : base * pow(sw / 360, 0.8)), { id: 'code' });
+    const strategies = [brand, CustomPresets.TABLET_FRIENDLY, CustomPresets.GAME_HUD, formula, product, code];
+    const render = () => {
+      document.getElementById('boxes').innerHTML = strategies
+        .map((s) => `<div><div class="box" style="width:${s.dp(48)}px;height:${s.dp(48)}px"></div><small>${s.id}</small></div>`)
+        .join('');
+      document.getElementById('explain').textContent = strategies.map((s) => s.explain()).join('\n');
+      window.__custom = { brand: brand.dp(48), factor: brand.factor() };
+    };
+    render();
+    subscribe(render);
+  </script>
+</body>
+</html>

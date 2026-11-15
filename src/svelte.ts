@@ -11,6 +11,7 @@
  */
 import type { DimenMetrics } from './core/metrics';
 import { getMetrics, subscribe } from './core/runtime';
+import { bindScalingStrategy, pickScalingStrategy, type BoundScalingStrategy, type ScalingStrategy } from './custom/index';
 
 export interface Readable<T> {
   subscribe(run: (value: T) => void): () => void;
@@ -30,6 +31,20 @@ export function dimen<T>(compute: () => T): Readable<T> {
     subscribe(run) {
       run(compute());
       return subscribe(() => run(compute()));
+    },
+  };
+}
+
+/**
+ * Store of helpers bound to `strategy` (default: the global default), re-emitted on every
+ * snapshot change: `const brand = scalingStrategy('brand')` → `{$brand.dp(16)}`.
+ */
+export function scalingStrategy(strategy?: ScalingStrategy | string): Readable<BoundScalingStrategy> {
+  return {
+    subscribe(run) {
+      const s = pickScalingStrategy(strategy);
+      run(bindScalingStrategy(s));
+      return subscribe(() => run(bindScalingStrategy(s)));
     },
   };
 }

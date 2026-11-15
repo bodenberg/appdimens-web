@@ -88,6 +88,46 @@ export function parseToken(name: string): ParsedToken | null {
   return hit;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Custom strategy literals: `16cdp` / `14csp` (default strategy) and `16cdp-brand` / `14csp-brand`.
+// CSS compilation is pure string work; JS resolution needs `webdimens/custom`, which installs
+// the resolver on import (keeps the core free of the custom engine).
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CustomResolver = (value: number, kind: 'dp' | 'sp', id: string | null) => number;
+let customResolver: CustomResolver | null = null;
+let customCssHook: (() => void) | null = null;
+
+/** Installed by `webdimens/custom`. @internal */
+export function setCustomLiteralResolver(resolver: CustomResolver | null, onCss: (() => void) | null = null): void {
+  customResolver = resolver;
+  customCssHook = onCss;
+}
+
+const CUSTOM_VALUE = /^(-?(?:\d+(?:\.\d*)?|\.\d+))(cdp|csp)(?:-([A-Za-z0-9_-]+))?$/;
+
+/** `16cdp-brand` → `{ value: 16, kind: 'dp', id: 'brand' }`; `14csp` → default strategy (`id: null`). */
+export function parseCustomLiteral(literal: string): { value: number; kind: 'dp' | 'sp'; id: string | null } | null {
+  const m = CUSTOM_VALUE.exec(literal.trim());
+  if (!m) return null;
+  return { value: parseFloat(m[1]!), kind: m[2] === 'csp' ? 'sp' : 'dp', id: m[3] ?? null };
+}
+
+function customToCss(c: { value: number; kind: 'dp' | 'sp'; id: string | null }): string {
+  customCssHook?.();
+  const name = `--c${c.kind}${c.id ? `-${c.id}` : ''}`;
+  return `calc(${c.value} * var(${name}))`;
+}
+
+function resolveCustom(c: { value: number; kind: 'dp' | 'sp'; id: string | null }, literal: string): number {
+  if (!customResolver) {
+    throw new TypeError(`webdimens: "${literal}" is a custom-strategy literal; import 'webdimens/custom' (and define the strategy) first.`);
+  }
+  return customResolver(c.value, c.kind, c.id);
+}
+
+const isLiteral = (lit: string): boolean => parseDimenLiteral(lit) !== null || parseCustomLiteral(lit) !== null;
+
 /** `16sdp`, `-0.5hdpLwa`, `.75ssp` → [number, token]. */
 const VALUE = /^(-?(?:\d+(?:\.\d*)?|\.\d+))([a-zA-Z]+)$/;
 
@@ -116,6 +156,8 @@ export function dimen(input: string | number): number {
   if (typeof input === 'number') return input;
   const lit = parseDimenLiteral(input);
   if (lit) return resolveToken(lit.value, lit.token);
+  const custom = parseCustomLiteral(input);
+  if (custom) return resolveCustom(custom, input);
   const n = parseFloat(input);
   if (Number.isFinite(n) && /^\s*-?[\d.]+(px)?\s*$/.test(input)) return n;
   throw new TypeError(`webdimens: cannot resolve "${input}" (expected e.g. "16sdp", "14ssp", "12px")`);
@@ -123,6 +165,8 @@ export function dimen(input: string | number): number {
 
 /** CSS expression for one literal: `16sdp` → `calc(16 * var(--sdp))`; non-tokens are returned unchanged. */
 export function literalToCss(literal: string): string {
+  const custom = parseCustomLiteral(literal);
+  if (custom) return customToCss(custom);
   const lit = parseDimenLiteral(literal);
   if (!lit) return literal;
   if (!lit.token.css) {
@@ -134,7 +178,7 @@ export function literalToCss(literal: string): string {
   return `calc(${lit.value} * var(--${lit.token.name}))`;
 }
 
-const LITERAL = String.raw`(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+)`;
+const LITERAL = String.raw`(-?(?:\d+(?:\.\d*)?|\.\d+)[a-zA-Z]+(?:-[A-Za-z0-9_-]+)?)`;
 /** Literal boundaries inside a value: start, whitespace, `,` `(` `)` `/` `*`. */
 const VALUE_LITERAL = new RegExp(String.raw`(^|[\s,(/*])${LITERAL}(?=$|[\s,)/*])`, 'g');
 /** Inside stylesheet text a literal may also follow `:` and precede `;` `!` `}`. */
@@ -155,14 +199,14 @@ function mapLiterals(text: string, pattern: RegExp, map: (literal: string) => st
 
 /** Replaces every dimension literal in a CSS value: `"8sdp 16sdp"` → two `calc()` terms. Throws on JS-only tokens. */
 export function dimenCss(value: string): string {
-  return mapLiterals(value, VALUE_LITERAL, (lit) => (parseDimenLiteral(lit) ? literalToCss(lit) : null));
+  return mapLiterals(value, VALUE_LITERAL, (lit) => (isLiteral(lit) ? literalToCss(lit) : null));
 }
 
 /** `true` when the string contains at least one dimension literal (never throws). */
 export function hasDimenLiteral(value: string): boolean {
   let found = false;
   mapLiterals(value, VALUE_LITERAL, (lit) => {
-    if (parseDimenLiteral(lit)) found = true;
+    if (isLiteral(lit)) found = true;
     return null;
   });
   return found;
@@ -201,9 +245,16 @@ export function dimensPx<T extends StyleInput>(style: T): { [K in keyof T]: stri
       out[key] = resolveToken(single.value, single.token);
       continue;
     }
+    const singleCustom = parseCustomLiteral(v);
+    if (singleCustom) {
+      out[key] = resolveCustom(singleCustom, v);
+      continue;
+    }
     out[key] = mapLiterals(v, VALUE_LITERAL, (lit) => {
       const p = parseDimenLiteral(lit);
-      return p ? `${Math.round(resolveToken(p.value, p.token) * 1e4) / 1e4}px` : null;
+      if (p) return `${Math.round(resolveToken(p.value, p.token) * 1e4) / 1e4}px`;
+      const c = parseCustomLiteral(lit);
+      return c ? `${Math.round(resolveCustom(c, lit) * 1e4) / 1e4}px` : null;
     });
   }
   return out as { [K in keyof T]: string | number };
@@ -220,6 +271,8 @@ export function tokenQualifier(t: ParsedToken): DpQualifier {
  */
 export function compileCssText(css: string): string {
   return mapLiterals(css, TEXT_LITERAL, (lit) => {
+    const c = parseCustomLiteral(lit);
+    if (c) return customToCss(c);
     const p = parseDimenLiteral(lit);
     if (!p) return null;
     if (!p.token.css) {

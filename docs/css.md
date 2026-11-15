@@ -188,6 +188,14 @@ export default { plugins: { 'webdimens/postcss': {} } };
 
 The plugin object is typed to be assignable to PostCSS's own `Plugin` type, so TypeScript configs work without casts.
 
+## Custom strategy properties
+
+[Custom strategies](./custom.md) publish `--cdp-<id>` (layout factor) and `--csp-<id>` (text factor × effective font scale), plus `--cdp` / `--csp` for the default strategy. The PostCSS plugin and `dimenCss()` compile `16cdp-brand` → `calc(16 * var(--cdp-brand))` and `14csp-brand` → `calc(14 * var(--csp-brand))`.
+
+```css
+.hero { padding: 24cdp-brand; font-size: 32csp-brand; }
+```
+
 ## Coexisting with other tools
 
 - **Tailwind CSS**: dimension classes only claim class names whose value contains a unit token, so `hover:bg-red-500` or
